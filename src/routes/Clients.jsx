@@ -68,7 +68,7 @@ function Clients() {
   }
 
   return (
-    <div>
+    <div className="px-4 pb-16 max-w-lg mx-auto">
       <PageHeader
         title="Clients"
         actionLabel={showForm ? null : "Add Client"}
@@ -77,84 +77,78 @@ function Clients() {
       />
 
       {showForm && (
-        <div className="mt-6 bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-          <div className="md:grid md:grid-cols-3 md:gap-6">
-            <div className="md:col-span-1">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">New Client</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Add a new client to your invoice system.
-              </p>
+        <div className="mt-6 bg-white shadow rounded-lg p-4">
+          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-3">New Client</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Add a new client to your invoice system.
+          </p>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                type="text"
+                name="name"
+                id="name"
+                value={newClient.name}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
-            <div className="mt-5 md:mt-0 md:col-span-2">
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-6 gap-6">
-                  <div className="col-span-6 sm:col-span-3">
-                    <label htmlFor="name" className="label">Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      id="name"
-                      value={newClient.name}
-                      onChange={handleInputChange}
-                      required
-                      className="input"
-                    />
-                  </div>
 
-                  <div className="col-span-6 sm:col-span-3">
-                    <label htmlFor="email" className="label">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={newClient.email}
-                      onChange={handleInputChange}
-                      className="input"
-                    />
-                  </div>
-
-                  <div className="col-span-6 sm:col-span-3">
-                    <label htmlFor="phone" className="label">Phone</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      id="phone"
-                      value={newClient.phone}
-                      onChange={handleInputChange}
-                      className="input"
-                    />
-                  </div>
-
-                  <div className="col-span-6">
-                    <label htmlFor="address" className="label">Address</label>
-                    <textarea
-                      name="address"
-                      id="address"
-                      rows={3}
-                      value={newClient.address}
-                      onChange={handleInputChange}
-                      className="input"
-                    />
-                  </div>
-                </div>
-                <div className="mt-5 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn"
-                  >
-                    Save
-                  </button>
-                </div>
-              </form>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                value={newClient.email}
+                onChange={handleInputChange}
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
-          </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                type="text"
+                name="phone"
+                id="phone"
+                value={newClient.phone}
+                onChange={handleInputChange}
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <textarea
+                name="address"
+                id="address"
+                rows={3}
+                value={newClient.address}
+                onChange={handleInputChange}
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Save
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
@@ -168,41 +162,51 @@ function Clients() {
         />
       ) : (
         !showForm && (
-          <div className="mt-6 bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
-              {clients.map((client) => (
-                <li key={client.id}>
-                  <Link to={`/clients/${client.id}`} className="block hover:bg-gray-50">
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-blue-600 truncate">
-                          {client.name}
-                        </p>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          {client.email && (
-                            <p className="flex items-center text-sm text-gray-500">
-                              {client.email}
-                            </p>
-                          )}
-                          {client.phone && client.email && (
-                            <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                              {client.phone}
-                            </p>
-                          )}
-                          {client.phone && !client.email && (
-                            <p className="flex items-center text-sm text-gray-500">
-                              {client.phone}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+          <div className="mt-6 space-y-3">
+            {clients.map((client) => (
+              <div key={client.id} className="bg-white shadow rounded-lg overflow-hidden">
+                <Link to={`/clients/${client.id}`} className="block p-4 hover:bg-gray-50">
+                  <div className="flex flex-col">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-base font-medium text-blue-600 truncate">
+                        {client.name}
+                      </h3>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
                     </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                    
+                    {client.email && (
+                      <p className="text-sm text-gray-500 mb-1 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                          <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                        </svg>
+                        {client.email}
+                      </p>
+                    )}
+                    
+                    {client.phone && (
+                      <p className="text-sm text-gray-500 mb-1 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        {client.phone}
+                      </p>
+                    )}
+                    
+                    {client.address && (
+                      <p className="text-sm text-gray-500 flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 mt-0.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="truncate">{client.address}</span>
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              </div>
+            ))}
           </div>
         )
       )}

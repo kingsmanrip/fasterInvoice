@@ -212,6 +212,67 @@ This workflow enables efficient management of the entire invoicing process from 
 
 This journey represents the core workflow that most users will follow when using the fasterInvoice application, from initial client setup through to payment collection and reporting.
 
+## Mobile Optimization
+
+1. **Dashboard Optimization**
+   - Enhanced the Dashboard UI for iPhone usage:
+     - Mobile-friendly layout with larger touch targets
+     - Vertical button layout with larger icons for easier tapping
+     - Simplified 2x2 grid for statistics cards
+     - Compact status indicators
+     - Redesigned invoice cards with better spacing
+     - Maximum width container to ensure proper display on iPhone screens
+     - Increased padding and spacing for better touch interaction
+
+2. **Navigation Improvements**
+   - Added bottom tab navigation bar with icons and labels for Home, Clients, Projects, and Invoices
+   - Removed the top navigation bar to maximize screen space
+   - Adjusted layouts to work with bottom tabs
+   - Made all interactive elements have proper touch targets following iOS design guidelines
+
+3. **Clients Component**
+   - Optimized for mobile use with a single-column layout
+   - Enhanced input fields and buttons for better touch targets
+   - Improved card layouts for displaying client information
+
+4. **Projects Component**
+   - Simplified form layout for mobile compatibility
+   - Enhanced project cards with better spacing and visual hierarchy
+   - Improved input fields and dropdowns for easier interaction
+
+5. **Invoices Component**
+   - Redesigned for mobile usability with a clear layout and improved spacing
+   - Enhanced form for creating new invoices with proper field names matching the database schema:
+     - Changed `invoice_date` to `issue_date`
+     - Changed `amount` to `total_amount`
+   - Fixed API endpoint for updating invoice status to use the correct endpoint `/api/invoices/:id/status`
+   - Improved invoice creation process to properly include client_id and invoice items
+   - Enhanced invoice cards with clear status indicators and action buttons
+   - Added proper display of invoice numbers
+   - Fixed data ordering to show newest invoices at the top
+
+## Recent Fixes
+
+1. **Invoices Component Fixes**
+   - Fixed field name mismatches between frontend and database:
+     - Renamed form fields to match database schema (`issue_date`, `total_amount`)
+     - Updated all references to these fields throughout the component
+   - Fixed API endpoint mismatch:
+     - Changed from PATCH request to `/api/invoices/${invoiceId}` to PUT request to `/api/invoices/${invoiceId}/status`
+   - Improved invoice creation process:
+     - Added logic to get the client_id from the selected project
+     - Created proper invoice items structure as required by the backend
+     - Formatted the request body correctly to match server expectations
+   - Enhanced the UI:
+     - Added support for displaying the proper invoice number
+     - Added a "Draft" option to the status dropdown
+     - Improved the display of invoice data in the list
+
+2. **Testing of Fixed Components**
+   - Verified that invoice creation works correctly
+   - Confirmed that status updates (Mark as Paid, Mark as Overdue) function properly
+   - Tested the mobile-friendly UI on iPhone screen sizes
+
 ## Next Steps
 
 Potential improvements for the application:

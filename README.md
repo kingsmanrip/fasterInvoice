@@ -1,6 +1,6 @@
 # Simple Invoice App
 
-A lightweight invoice management application built with React, Vite, Tailwind CSS, and SQLite.
+A lightweight invoice management application built with React, Vite, Tailwind CSS, and SQLite. Optimized for iPhone usage with a mobile-first design approach.
 
 ## Features
 
@@ -9,7 +9,8 @@ A lightweight invoice management application built with React, Vite, Tailwind CS
 - Invoice generation
 - PDF download
 - Status tracking for projects and invoices
-- Responsive design
+- Mobile-optimized interface with bottom tab navigation
+- Responsive design with touch-friendly controls
 
 ## Tech Stack
 
@@ -49,6 +50,16 @@ This will start both the frontend (Vite) and backend (Express) servers concurren
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
 
+## Mobile Optimization
+
+The application is designed primarily for iPhone usage with:
+
+- Bottom tab navigation for easy access to key sections
+- Large touch targets for all interactive elements
+- Simplified layouts optimized for smaller screens
+- Improved form inputs for mobile interaction
+- Status indicators and action buttons sized for touch
+
 ## Documentation
 
 For detailed documentation including:
@@ -56,8 +67,12 @@ For detailed documentation including:
 - Testing information
 - User workflow
 - Feature verification
+- Mobile optimization details
+- Recent fixes and improvements
 
 Please refer to the [PROGRESS.md](./PROGRESS.md) file.
+
+For development guidelines, refer to [WINDSURF.md](./WINDSURF.md).
 
 ## Database
 

@@ -85,6 +85,38 @@ This document serves as a set of instructions and guidelines for AI assistants w
   - Located in `data/invoice.db`
   - Tables: clients, projects, invoices, invoice_items
 
+## Mobile Optimization Guidelines
+
+When making changes to the application, ensure they follow these mobile-first principles:
+
+1. **Touch Targets**
+   - All interactive elements should be at least 44x44 pixels
+   - Provide adequate spacing between touch targets
+   - Use padding rather than margins for touch areas
+
+2. **Form Inputs**
+   - Input fields should have sufficient height (minimum 44px)
+   - Use appropriate input types (tel, email, number, etc.)
+   - Ensure labels are clearly associated with inputs
+
+3. **Layout**
+   - Use single column layouts where possible
+   - Limit horizontal scrolling
+   - Ensure content fits within the viewport width
+   - Use appropriate spacing between elements
+
+4. **API Integration**
+   - Ensure field names in forms match database schema exactly
+   - Verify API endpoints and HTTP methods match server expectations
+   - Format request bodies correctly according to API requirements
+
+5. **Recent Fixes Reference**
+   - When working with the Invoices component, note these important fixes:
+     - Form field names should use `issue_date` (not `invoice_date`)
+     - Amount field should use `total_amount` (not `amount`)
+     - Status updates use PUT to `/api/invoices/:id/status`
+     - Invoice creation requires both invoice data and items array
+
 ## Testing
 
 - Run tests with `npm test`
@@ -108,7 +140,8 @@ Follow the established user workflow when implementing new features:
 - User has been prompted about restarting the application
 - Any new features align with the established user workflow
 - Testing has been performed where appropriate
+- Mobile optimization guidelines have been followed
 
 ---
 
-*This document was created on 2025-03-06 and should be updated as the project evolves.*
+*This document was last updated on 2025-03-06 and should be updated as the project evolves.*
