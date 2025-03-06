@@ -1,0 +1,43 @@
+{
+  "name": "invoice",
+  "version": "1.0.0",
+  "description": "Simple Invoice App with projects, clients and PDF generation",
+  "main": "server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "vite",
+    "dev:backend": "nodemon server.js",
+    "build": "vite build",
+    "start": "node server.js",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "invoice",
+    "sqlite",
+    "vite",
+    "react",
+    "tailwind"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@headlessui/react": "^2.2.0",
+    "@heroicons/react": "^2.2.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "better-sqlite3": "^11.8.1",
+    "date-fns": "^4.1.0",
+    "express": "^4.21.2",
+    "jspdf": "^3.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^6.16.0",
+    "vite": "^6.2.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.9",
+    "postcss": "^8.4.27",
+    "tailwindcss": "^3.3.3"
+  }
+}
