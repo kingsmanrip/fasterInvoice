@@ -23,15 +23,15 @@ A lightweight invoice management application built with React, Vite, Tailwind CS
 
 ### Prerequisites
 
-- Node.js (v14+)
-- npm or yarn
+- Node.js (v18+)
+- npm
 
 ### Installation
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/invoice-app.git
-cd invoice-app
+git clone https://github.com/yourusername/fasterInvoice.git
+cd fasterInvoice
 ```
 
 2. Install dependencies
@@ -49,21 +49,15 @@ This will start both the frontend (Vite) and backend (Express) servers concurren
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
 
-### Building for Production
+## Documentation
 
-```bash
-npm run build
-```
+For detailed documentation including:
+- Setup process
+- Testing information
+- User workflow
+- Feature verification
 
-This will generate a production build in the `dist` directory.
-
-### Running in Production
-
-```bash
-npm start
-```
-
-This will serve the built frontend files and start the API server.
+Please refer to the [PROGRESS.md](./PROGRESS.md) file.
 
 ## Database
 
