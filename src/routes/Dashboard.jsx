@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
+import { getData } from '../utils/api';
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -21,19 +22,19 @@ function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         // Fetch clients count
-        const clientsRes = await fetch('/api/clients');
-        const clients = await clientsRes.json();
+        const clients = await getData('/api/clients');
         
         // Fetch projects count
-        const projectsRes = await fetch('/api/projects');
-        const projects = await projectsRes.json();
+        const projects = await getData('/api/projects');
         
         // Fetch invoices
-        const invoicesRes = await fetch('/api/invoices');
-        const invoices = await invoicesRes.json();
+        const invoices = await getData('/api/invoices');
         
-        // Calculate additional statistics
-        const now = new Date();
+        // Calculate statistics
+        const totalClients = clients.length;
+        const totalProjects = projects.length;
+        const totalInvoices = invoices.length;
+        
         let totalPaid = 0;
         let totalPending = 0;
         let totalOverdue = 0;
@@ -41,29 +42,24 @@ function Dashboard() {
         let totalOutstanding = 0;
         
         invoices.forEach(invoice => {
-          totalAmount += invoice.total_amount;
+          const amount = parseFloat(invoice.total_amount);
+          totalAmount += amount;
           
           if (invoice.status === 'paid') {
             totalPaid++;
-          } else {
-            totalOutstanding += invoice.total_amount;
-            
-            if (invoice.status === 'pending') {
-              totalPending++;
-            }
-            
-            // Check if invoice is overdue
-            const dueDate = new Date(invoice.due_date);
-            if (dueDate < now && invoice.status !== 'paid') {
-              totalOverdue++;
-            }
+          } else if (invoice.status === 'pending') {
+            totalPending++;
+            totalOutstanding += amount;
+          } else if (invoice.status === 'overdue') {
+            totalOverdue++;
+            totalOutstanding += amount;
           }
         });
         
         setStats({
-          totalClients: clients.length,
-          totalProjects: projects.length,
-          totalInvoices: invoices.length,
+          totalClients,
+          totalProjects,
+          totalInvoices,
           totalPaid,
           totalPending,
           totalOverdue,
@@ -73,17 +69,17 @@ function Dashboard() {
         
         // Sort invoices by due date and get 5 most recent
         const sortedInvoices = [...invoices].sort((a, b) => {
-          return new Date(a.due_date) - new Date(b.due_date);
-        });
-        setRecentInvoices(sortedInvoices.slice(0, 5));
+          return new Date(b.due_date) - new Date(a.due_date);
+        }).slice(0, 5);
         
+        setRecentInvoices(sortedInvoices);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-      } finally {
         setLoading(false);
       }
     };
-
+    
     fetchDashboardData();
   }, []);
   

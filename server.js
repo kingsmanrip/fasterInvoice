@@ -3,6 +3,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const jwt = require('jsonwebtoken');
 const ClientModel = require('./src/db/clientModel');
 const ProjectModel = require('./src/db/projectModel');
 const InvoiceModel = require('./src/db/invoiceModel');
@@ -26,6 +27,16 @@ const options = {
   ].join(':')
 };
 
+// JWT Secret for authentication
+const JWT_SECRET = 'mauricio-paint-invoice-secret-key-2025';
+
+// Valid users for authentication
+const VALID_USERS = [
+  { username: 'patricia', password: 'Patricia*2025*' },
+  { username: 'mauricio', password: 'Mauricio*2025*' },
+  { username: 'javier', password: 'Javier*2025*' }
+];
+
 // Add security headers middleware
 app.use((req, res, next) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
@@ -40,9 +51,28 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// Middleware to verify JWT token for protected routes
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+    
+    req.user = user;
+    next();
+  });
+};
+
 // API Routes
 // Clients
-app.get('/api/clients', (req, res) => {
+app.get('/api/clients', authenticateToken, (req, res) => {
   try {
     const clients = ClientModel.getAll();
     res.json(clients);
@@ -51,7 +81,7 @@ app.get('/api/clients', (req, res) => {
   }
 });
 
-app.get('/api/clients/:id', (req, res) => {
+app.get('/api/clients/:id', authenticateToken, (req, res) => {
   try {
     const client = ClientModel.getById(req.params.id);
     if (!client) {
@@ -63,7 +93,7 @@ app.get('/api/clients/:id', (req, res) => {
   }
 });
 
-app.post('/api/clients', (req, res) => {
+app.post('/api/clients', authenticateToken, (req, res) => {
   try {
     const client = ClientModel.create(req.body);
     res.status(201).json(client);
@@ -72,7 +102,7 @@ app.post('/api/clients', (req, res) => {
   }
 });
 
-app.put('/api/clients/:id', (req, res) => {
+app.put('/api/clients/:id', authenticateToken, (req, res) => {
   try {
     const client = ClientModel.update(req.params.id, req.body);
     res.json(client);
@@ -81,7 +111,7 @@ app.put('/api/clients/:id', (req, res) => {
   }
 });
 
-app.delete('/api/clients/:id', (req, res) => {
+app.delete('/api/clients/:id', authenticateToken, (req, res) => {
   try {
     ClientModel.delete(req.params.id);
     res.json({ message: 'Client deleted successfully' });
@@ -91,7 +121,7 @@ app.delete('/api/clients/:id', (req, res) => {
 });
 
 // Projects
-app.get('/api/projects', (req, res) => {
+app.get('/api/projects', authenticateToken, (req, res) => {
   try {
     const projects = ProjectModel.getAll();
     res.json(projects);
@@ -100,7 +130,7 @@ app.get('/api/projects', (req, res) => {
   }
 });
 
-app.get('/api/clients/:clientId/projects', (req, res) => {
+app.get('/api/clients/:clientId/projects', authenticateToken, (req, res) => {
   try {
     const projects = ProjectModel.getByClientId(req.params.clientId);
     res.json(projects);
@@ -109,7 +139,7 @@ app.get('/api/clients/:clientId/projects', (req, res) => {
   }
 });
 
-app.get('/api/projects/:id', (req, res) => {
+app.get('/api/projects/:id', authenticateToken, (req, res) => {
   try {
     const project = ProjectModel.getById(req.params.id);
     if (!project) {
@@ -121,7 +151,7 @@ app.get('/api/projects/:id', (req, res) => {
   }
 });
 
-app.post('/api/projects', (req, res) => {
+app.post('/api/projects', authenticateToken, (req, res) => {
   try {
     const project = ProjectModel.create(req.body);
     res.status(201).json(project);
@@ -130,7 +160,7 @@ app.post('/api/projects', (req, res) => {
   }
 });
 
-app.put('/api/projects/:id', (req, res) => {
+app.put('/api/projects/:id', authenticateToken, (req, res) => {
   try {
     const project = ProjectModel.update(req.params.id, req.body);
     res.json(project);
@@ -139,7 +169,7 @@ app.put('/api/projects/:id', (req, res) => {
   }
 });
 
-app.delete('/api/projects/:id', (req, res) => {
+app.delete('/api/projects/:id', authenticateToken, (req, res) => {
   try {
     ProjectModel.delete(req.params.id);
     res.json({ message: 'Project deleted successfully' });
@@ -149,7 +179,7 @@ app.delete('/api/projects/:id', (req, res) => {
 });
 
 // Invoices
-app.get('/api/invoices', (req, res) => {
+app.get('/api/invoices', authenticateToken, (req, res) => {
   try {
     const invoices = InvoiceModel.getAll();
     res.json(invoices);
@@ -158,7 +188,7 @@ app.get('/api/invoices', (req, res) => {
   }
 });
 
-app.get('/api/invoices/:id', (req, res) => {
+app.get('/api/invoices/:id', authenticateToken, (req, res) => {
   try {
     const invoice = InvoiceModel.getById(req.params.id);
     if (!invoice) {
@@ -170,7 +200,7 @@ app.get('/api/invoices/:id', (req, res) => {
   }
 });
 
-app.post('/api/invoices', (req, res) => {
+app.post('/api/invoices', authenticateToken, (req, res) => {
   try {
     const { invoice, items } = req.body;
     const createdInvoice = InvoiceModel.create(invoice, items);
@@ -180,7 +210,7 @@ app.post('/api/invoices', (req, res) => {
   }
 });
 
-app.put('/api/invoices/:id/status', (req, res) => {
+app.put('/api/invoices/:id/status', authenticateToken, (req, res) => {
   try {
     const { status } = req.body;
     const invoice = InvoiceModel.updateStatus(req.params.id, status);
@@ -190,13 +220,36 @@ app.put('/api/invoices/:id/status', (req, res) => {
   }
 });
 
-app.delete('/api/invoices/:id', (req, res) => {
+app.delete('/api/invoices/:id', authenticateToken, (req, res) => {
   try {
     InvoiceModel.delete(req.params.id);
     res.json({ message: 'Invoice deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Login API endpoint
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  // Find user
+  const user = VALID_USERS.find(
+    u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
+  );
+  
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid username or password' });
+  }
+  
+  // Generate JWT token
+  const token = jwt.sign(
+    { username: user.username },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+  
+  res.json({ token });
 });
 
 // Serve the React app for any other routes

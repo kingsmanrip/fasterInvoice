@@ -4,6 +4,8 @@ A lightweight invoice management application built with React, Vite, Tailwind CS
 
 ## Features
 
+- Secure authentication with JWT tokens
+- Restricted access for authorized users only
 - Client management
 - Project tracking
 - Invoice generation with PDF download capabilities
@@ -17,6 +19,7 @@ A lightweight invoice management application built with React, Vite, Tailwind CS
 - **Frontend**: React, React Router, Tailwind CSS
 - **Backend**: Express.js
 - **Database**: SQLite with better-sqlite3
+- **Authentication**: JSON Web Tokens (JWT)
 - **PDF Generation**: jsPDF
 - **Bundler**: Vite
 
@@ -63,6 +66,16 @@ https://mauricioinvoice.site
 ```
 
 The application uses a trusted SSL certificate from Let's Encrypt, ensuring secure access without browser warnings. The certificate is configured to automatically renew before expiration (current expiration: June 6, 2025).
+
+### Authentication
+
+The application implements a secure authentication system with the following features:
+
+- **Login Page**: A user-friendly login interface with a paint-related logo
+- **Protected Routes**: All application routes are protected and require authentication
+- **JWT Authentication**: Secure token-based authentication using JSON Web Tokens
+- **Authorized Users**: Access is restricted to specific users (Patricia, Mauricio, and Javier)
+- **Logout Functionality**: Users can securely log out from the application
 
 ### Deployment Process
 

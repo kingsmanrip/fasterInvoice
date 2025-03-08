@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
+import { getData, postData, deleteData } from '../utils/api';
 
 function Clients() {
   const [clients, setClients] = useState([]);
@@ -20,8 +21,7 @@ function Clients() {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch('/api/clients');
-      const data = await response.json();
+      const data = await getData('/api/clients');
       setClients(data);
     } catch (error) {
       console.error('Error fetching clients:', error);
@@ -39,25 +39,15 @@ function Clients() {
     e.preventDefault();
     
     try {
-      const response = await fetch('/api/clients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newClient),
+      const client = await postData('/api/clients', newClient);
+      setClients((prev) => [...prev, client]);
+      setNewClient({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
       });
-      
-      if (response.ok) {
-        const client = await response.json();
-        setClients((prev) => [...prev, client]);
-        setNewClient({
-          name: '',
-          email: '',
-          phone: '',
-          address: '',
-        });
-        setShowForm(false);
-      }
+      setShowForm(false);
     } catch (error) {
       console.error('Error creating client:', error);
     }

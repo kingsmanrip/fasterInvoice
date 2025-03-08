@@ -1,10 +1,48 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { getCurrentUser, clearAuth } from '../utils/auth';
 
 function Layout() {
+  const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  
+  useEffect(() => {
+    // Get username using our utility function
+    const user = getCurrentUser();
+    if (user) {
+      setUsername(user);
+    }
+  }, []);
+  
+  const handleLogout = () => {
+    // Clear authentication data using our utility function
+    clearAuth();
+    // Redirect to login
+    navigate('/login');
+  };
+  
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Header with user info and logout */}
+      <header className="bg-white shadow">
+        <div className="flex justify-between items-center px-4 py-2">
+          <h1 className="text-lg font-semibold text-gray-800">Mauricio Paint & DW</h1>
+          <div className="flex items-center">
+            <span className="text-sm text-gray-600 mr-3">
+              {username && `Welcome, ${username.charAt(0).toUpperCase() + username.slice(1)}`}
+            </span>
+            <button 
+              onClick={handleLogout}
+              className="text-sm text-red-600 hover:text-red-800"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+      
       {/* Main content area with padding for bottom tabs */}
-      <main className="pb-20">
+      <main className="pb-20 pt-4">
         <Outlet />
       </main>
       

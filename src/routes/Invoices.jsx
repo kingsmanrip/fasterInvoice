@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import StatusBadge from '../components/StatusBadge';
+import { getData, postData, putData, deleteData } from '../utils/api';
 
 function Invoices() {
   const location = useLocation();
@@ -26,13 +27,11 @@ function Invoices() {
     const fetchData = async () => {
       try {
         // Fetch all invoices
-        const invoicesRes = await fetch('/api/invoices');
-        const invoicesData = await invoicesRes.json();
+        const invoicesData = await getData('/api/invoices');
         setInvoices(invoicesData);
         
         // Fetch all projects (for dropdown)
-        const projectsRes = await fetch('/api/projects');
-        const projectsData = await projectsRes.json();
+        const projectsData = await getData('/api/projects');
         setProjects(projectsData);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -40,7 +39,7 @@ function Invoices() {
         setLoading(false);
       }
     };
-
+    
     fetchData();
   }, []);
 
@@ -80,30 +79,22 @@ function Invoices() {
         }
       ];
       
-      const response = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          invoice: invoiceData, 
-          items: items 
-        }),
+      // postData already returns the JSON data
+      const invoice = await postData('/api/invoices', { 
+        invoice: invoiceData, 
+        items: items 
       });
       
-      if (response.ok) {
-        const invoice = await response.json();
-        setInvoices((prev) => [invoice, ...prev]);
-        setNewInvoice({
-          project_id: '',
-          issue_date: format(new Date(), 'yyyy-MM-dd'),
-          due_date: format(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-          total_amount: '',
-          status: 'pending',
-          notes: '',
-        });
-        setShowForm(false);
-      }
+      setInvoices((prev) => [invoice, ...prev]);
+      setNewInvoice({
+        project_id: '',
+        issue_date: format(new Date(), 'yyyy-MM-dd'),
+        due_date: format(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+        total_amount: '',
+        status: 'pending',
+        notes: '',
+      });
+      setShowForm(false);
     } catch (error) {
       console.error('Error creating invoice:', error);
     }
@@ -111,21 +102,11 @@ function Invoices() {
 
   const handleStatusChange = async (invoiceId, newStatus) => {
     try {
-      const response = await fetch(`/api/invoices/${invoiceId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const updatedInvoice = await putData(`/api/invoices/${invoiceId}/status`, { status: newStatus });
       
-      if (response.ok) {
-        setInvoices((prev) =>
-          prev.map((invoice) =>
-            invoice.id === invoiceId ? { ...invoice, status: newStatus } : invoice
-          )
-        );
-      }
+      setInvoices(invoices.map(invoice => 
+        invoice.id === invoiceId ? { ...invoice, status: newStatus } : invoice
+      ));
     } catch (error) {
       console.error('Error updating invoice status:', error);
     }

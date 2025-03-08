@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import StatusBadge from '../components/StatusBadge';
+import { getData, postData, deleteData } from '../utils/api';
 
 function Projects() {
   const location = useLocation();
@@ -24,13 +25,11 @@ function Projects() {
     const fetchData = async () => {
       try {
         // Fetch all projects
-        const projectsRes = await fetch('/api/projects');
-        const projectsData = await projectsRes.json();
+        const projectsData = await getData('/api/projects');
         setProjects(projectsData);
         
         // Fetch all clients (for dropdown)
-        const clientsRes = await fetch('/api/clients');
-        const clientsData = await clientsRes.json();
+        const clientsData = await getData('/api/clients');
         setClients(clientsData);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -38,7 +37,7 @@ function Projects() {
         setLoading(false);
       }
     };
-
+    
     fetchData();
   }, []);
 
@@ -56,26 +55,17 @@ function Projects() {
     e.preventDefault();
     
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newProject),
+      // postData already returns the JSON data
+      const project = await postData('/api/projects', newProject);
+      setProjects((prev) => [...prev, project]);
+      setNewProject({
+        client_id: '',
+        name: '',
+        description: '',
+        hourly_rate: '',
+        status: 'active',
       });
-      
-      if (response.ok) {
-        const project = await response.json();
-        setProjects((prev) => [...prev, project]);
-        setNewProject({
-          client_id: '',
-          name: '',
-          description: '',
-          hourly_rate: '',
-          status: 'active',
-        });
-        setShowForm(false);
-      }
+      setShowForm(false);
     } catch (error) {
       console.error('Error creating project:', error);
     }
