@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
+import { getData, putData, deleteData } from '../utils/api';
 
 function InvoiceDetail() {
   const { id } = useParams();
@@ -13,11 +14,12 @@ function InvoiceDetail() {
   useEffect(() => {
     const fetchInvoiceData = async () => {
       try {
-        const response = await fetch(`/api/invoices/${id}`);
-        if (!response.ok) {
-          throw new Error('Invoice not found');
+        const data = await getData(`/api/invoices/${id}`);
+        if (!data) {
+          console.error('Failed to fetch invoice data');
+          navigate('/invoices');
+          return;
         }
-        const data = await response.json();
         setInvoice(data);
       } catch (error) {
         console.error('Error fetching invoice:', error);
@@ -32,37 +34,21 @@ function InvoiceDetail() {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      const response = await fetch(`/api/invoices/${id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      
-      if (response.ok) {
-        setInvoice({ ...invoice, status: newStatus });
-      }
+      const updatedInvoice = await putData(`/api/invoices/${id}/status`, { status: newStatus });
+      setInvoice({ ...invoice, status: updatedInvoice.status });
     } catch (error) {
       console.error('Error updating invoice status:', error);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this invoice?')) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/invoices/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (response.ok) {
+    if (window.confirm('Are you sure you want to delete this invoice?')) {
+      try {
+        await deleteData(`/api/invoices/${id}`);
         navigate('/invoices');
+      } catch (error) {
+        console.error('Error deleting invoice:', error);
       }
-    } catch (error) {
-      console.error('Error deleting invoice:', error);
     }
   };
 

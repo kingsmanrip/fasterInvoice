@@ -108,10 +108,42 @@ const InvoiceModel = {
 
   // Delete an invoice and its items
   delete: (id) => {
-    return db.transaction(() => {
+    const transaction = db.transaction((id) => {
       db.prepare('DELETE FROM invoice_items WHERE invoice_id = ?').run(id);
       db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
-    })();
+    });
+    
+    return transaction(id);
+  },
+
+  // Get invoices by client ID
+  getByClientId: (clientId) => {
+    return db.prepare(`
+      SELECT 
+        i.*,
+        c.name as client_name,
+        p.name as project_name
+      FROM invoices i
+      JOIN clients c ON i.client_id = c.id
+      JOIN projects p ON i.project_id = p.id
+      WHERE i.client_id = ?
+      ORDER BY i.created_at DESC
+    `).all(clientId);
+  },
+
+  // Get invoices by project ID
+  getByProjectId: (projectId) => {
+    return db.prepare(`
+      SELECT 
+        i.*,
+        c.name as client_name,
+        p.name as project_name
+      FROM invoices i
+      JOIN clients c ON i.client_id = c.id
+      JOIN projects p ON i.project_id = p.id
+      WHERE i.project_id = ?
+      ORDER BY i.created_at DESC
+    `).all(projectId);
   }
 };
 

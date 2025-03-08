@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
+import { getData, putData, deleteData } from '../utils/api';
 
 function ProjectDetail() {
   const { id } = useParams();
@@ -23,30 +24,29 @@ function ProjectDetail() {
     const fetchProjectData = async () => {
       try {
         // Fetch project details
-        const projectRes = await fetch(`/api/projects/${id}`);
-        if (!projectRes.ok) {
-          throw new Error('Project not found');
+        const projectData = await getData(`/api/projects/${id}`);
+        if (!projectData) {
+          console.error('Failed to fetch project data');
+          navigate('/projects');
+          return;
         }
-        const projectData = await projectRes.json();
+        
         setProject(projectData);
         setEditedProject({
           client_id: projectData.client_id,
           name: projectData.name,
           description: projectData.description || '',
-          hourly_rate: projectData.hourly_rate || '',
+          hourly_rate: projectData.hourly_rate,
           status: projectData.status,
         });
         
-        // Fetch all clients (for dropdown)
-        const clientsRes = await fetch('/api/clients');
-        const clientsData = await clientsRes.json();
-        setClients(clientsData);
+        // Fetch all clients for dropdown
+        const clientsData = await getData('/api/clients');
+        setClients(clientsData || []);
         
-        // Fetch all invoices (then filter by project)
-        const invoicesRes = await fetch('/api/invoices');
-        const invoicesData = await invoicesRes.json();
-        setInvoices(invoicesData.filter(invoice => invoice.project_id === Number(id)));
-        
+        // Fetch invoices for this project
+        const invoicesData = await getData(`/api/projects/${id}/invoices`);
+        setInvoices(invoicesData || []);
       } catch (error) {
         console.error('Error fetching project data:', error);
         navigate('/projects');
@@ -54,7 +54,7 @@ function ProjectDetail() {
         setLoading(false);
       }
     };
-
+    
     fetchProjectData();
   }, [id, navigate]);
 
@@ -68,45 +68,26 @@ function ProjectDetail() {
     }));
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
     try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editedProject),
-      });
-      
-      if (response.ok) {
-        const updatedProject = await response.json();
-        // Find client name from clients list
-        const client = clients.find(c => c.id === updatedProject.client_id);
-        updatedProject.client_name = client ? client.name : '';
-        
-        setProject(updatedProject);
-        setIsEditing(false);
-      }
+      const updatedProject = await putData(`/api/projects/${id}`, editedProject);
+      setProject(updatedProject);
+      setIsEditing(false);
     } catch (error) {
       console.error('Error updating project:', error);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this project? This will also delete all associated invoices.')) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (response.ok) {
+    if (window.confirm('Are you sure you want to delete this project? This will also delete all associated invoices.')) {
+      try {
+        await deleteData(`/api/projects/${id}`);
         navigate('/projects');
+      } catch (error) {
+        console.error('Error deleting project:', error);
       }
-    } catch (error) {
-      console.error('Error deleting project:', error);
     }
   };
 
@@ -226,7 +207,7 @@ function ProjectDetail() {
                     </button>
                     <button
                       type="button"
-                      onClick={handleSave}
+                      onClick={handleSubmit}
                       className="btn"
                     >
                       Save

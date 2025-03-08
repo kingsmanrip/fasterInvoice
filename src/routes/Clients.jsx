@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import { getData, postData, deleteData } from '../utils/api';
@@ -155,7 +154,10 @@ function Clients() {
           <div className="mt-6 space-y-3">
             {clients.map((client) => (
               <div key={client.id} className="bg-white shadow rounded-lg overflow-hidden">
-                <Link to={`/clients/${client.id}`} className="block p-4 hover:bg-gray-50">
+                <div 
+                  onClick={() => window.location.href = `/clients/${client.id}`} 
+                  className="block p-4 hover:bg-gray-50 cursor-pointer"
+                >
                   <div className="flex flex-col">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-base font-medium text-blue-600 truncate">
@@ -194,7 +196,7 @@ function Clients() {
                       </p>
                     )}
                   </div>
-                </Link>
+                </div>
               </div>
             ))}
           </div>

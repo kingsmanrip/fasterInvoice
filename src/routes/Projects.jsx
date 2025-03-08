@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import StatusBadge from '../components/StatusBadge';
 import { getData, postData, deleteData } from '../utils/api';
 
 function Projects() {
-  const location = useLocation();
-  const initialClientId = location.state?.clientId || '';
-  
+  const initialClientId = '';
+
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -197,7 +195,10 @@ function Projects() {
           <div className="mt-6 space-y-3">
             {projects.map((project) => (
               <div key={project.id} className="bg-white shadow rounded-lg overflow-hidden">
-                <Link to={`/projects/${project.id}`} className="block p-4 hover:bg-gray-50">
+                <div 
+                  onClick={() => window.location.href = `/projects/${project.id}`} 
+                  className="block p-4 hover:bg-gray-50 cursor-pointer"
+                >
                   <div className="flex flex-col">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-base font-medium text-blue-600 truncate">
@@ -228,7 +229,7 @@ function Projects() {
                       </div>
                     )}
                   </div>
-                </Link>
+                </div>
               </div>
             ))}
           </div>

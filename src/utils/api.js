@@ -27,11 +27,22 @@ export const fetchWithAuth = async (url, options = {}) => {
  * @returns {Promise} Promise resolving to JSON data
  */
 export const getData = async (url) => {
-  const response = await fetchWithAuth(url);
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+  try {
+    const response = await fetchWithAuth(url);
+    if (!response.ok) {
+      console.error(`API error: ${response.status} for ${url}`);
+      if (response.status === 401 || response.status === 403) {
+        // If unauthorized, don't throw - let the ProtectedRoute handle redirection
+        return null;
+      }
+      throw new Error(`API error: ${response.status}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error(`Error fetching data from ${url}:`, error);
+    // Return null instead of throwing to prevent navigation interruption
+    return null;
   }
-  return response.json();
 };
 
 /**

@@ -481,6 +481,7 @@ This journey represents the core workflow that most users will follow when using
    - Mobile optimization features are working correctly
    - All CRUD operations for clients, projects, and invoices are functioning properly
    - Touch-friendly UI elements with proper sizing and spacing for mobile devices
+   - Navigation between pages works correctly with proper routing
 
 2. **Branding**
    - Updated application header to display the company name "Mauricio Paint and DW"
@@ -494,6 +495,13 @@ This journey represents the core workflow that most users will follow when using
      | /api/clients | 0.002s | 
      | /api/projects | 0.002s | 
      | /api/invoices | 0.002s | 
+
+4. **Recent Fixes (March 8, 2025)**
+   - Fixed navigation issues where clicking on client, project, and invoice cards would cause screen flashing without navigating
+   - Improved server-side routing to properly handle client-side navigation
+   - Enhanced error handling in API requests to prevent navigation interruptions
+   - Updated client authentication to use a single user account (Mauricio) as requested
+   - Implemented direct navigation approach for all card components to ensure consistent behavior
 
 ## Next Steps
 

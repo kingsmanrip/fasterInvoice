@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
+import { getData, putData, deleteData } from '../utils/api';
 
 function ClientDetail() {
   const { id } = useParams();
@@ -20,34 +21,51 @@ function ClientDetail() {
 
   useEffect(() => {
     const fetchClientData = async () => {
+      setLoading(true);
       try {
+        console.log(`Fetching client data for ID: ${id}`);
         // Fetch client details
-        const clientRes = await fetch(`/api/clients/${id}`);
-        if (!clientRes.ok) {
-          throw new Error('Client not found');
+        const clientData = await getData(`/api/clients/${id}`);
+        
+        if (!clientData) {
+          console.error('Failed to fetch client data - received null response');
+          navigate('/clients');
+          return;
         }
-        const clientData = await clientRes.json();
+        
         setClient(clientData);
         setEditedClient(clientData);
         
-        // Fetch client's projects
-        const projectsRes = await fetch(`/api/clients/${id}/projects`);
-        const projectsData = await projectsRes.json();
-        setProjects(projectsData);
+        try {
+          // Fetch projects for this client
+          console.log(`Fetching projects for client ID: ${id}`);
+          const projectsData = await getData(`/api/clients/${id}/projects`);
+          console.log('Projects data response:', projectsData);
+          setProjects(projectsData || []);
+        } catch (projectError) {
+          console.error('Error fetching projects:', projectError);
+          setProjects([]);
+        }
         
-        // Fetch all invoices (then filter by client)
-        const invoicesRes = await fetch('/api/invoices');
-        const invoicesData = await invoicesRes.json();
-        setInvoices(invoicesData.filter(invoice => invoice.client_id === Number(id)));
-        
+        try {
+          // Fetch invoices for this client
+          console.log(`Fetching invoices for client ID: ${id}`);
+          const invoicesData = await getData(`/api/clients/${id}/invoices`);
+          console.log('Invoices data response:', invoicesData);
+          setInvoices(invoicesData || []);
+        } catch (invoiceError) {
+          console.error('Error fetching invoices:', invoiceError);
+          setInvoices([]);
+        }
       } catch (error) {
-        console.error('Error fetching client data:', error);
+        console.error('Error in fetchClientData:', error);
         navigate('/clients');
       } finally {
+        console.log('Setting loading to false');
         setLoading(false);
       }
     };
-
+    
     fetchClientData();
   }, [id, navigate]);
 
@@ -56,41 +74,26 @@ function ClientDetail() {
     setEditedClient((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
     try {
-      const response = await fetch(`/api/clients/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editedClient),
-      });
-      
-      if (response.ok) {
-        const updatedClient = await response.json();
-        setClient(updatedClient);
-        setIsEditing(false);
-      }
+      const updatedClient = await putData(`/api/clients/${id}`, editedClient);
+      setClient(updatedClient);
+      setIsEditing(false);
     } catch (error) {
       console.error('Error updating client:', error);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this client? This will also delete all associated projects and invoices.')) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/clients/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (response.ok) {
+    if (window.confirm('Are you sure you want to delete this client? This will also delete all associated projects and invoices.')) {
+      try {
+        await deleteData(`/api/clients/${id}`);
         navigate('/clients');
+      } catch (error) {
+        console.error('Error deleting client:', error);
       }
-    } catch (error) {
-      console.error('Error deleting client:', error);
     }
   };
 
@@ -118,81 +121,82 @@ function ClientDetail() {
                 </p>
               </div>
               <div className="mt-5 md:mt-0 md:col-span-2">
-                <div className="grid grid-cols-6 gap-6">
-                  <div className="col-span-6 sm:col-span-3">
-                    <label htmlFor="name" className="label">Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      id="name"
-                      value={editedClient.name}
-                      onChange={handleInputChange}
-                      required
-                      className="input"
-                    />
-                  </div>
+                <form onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-6 gap-6">
+                    <div className="col-span-6 sm:col-span-3">
+                      <label htmlFor="name" className="label">Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        value={editedClient.name}
+                        onChange={handleInputChange}
+                        required
+                        className="input"
+                      />
+                    </div>
 
-                  <div className="col-span-6 sm:col-span-3">
-                    <label htmlFor="email" className="label">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={editedClient.email || ''}
-                      onChange={handleInputChange}
-                      className="input"
-                    />
-                  </div>
+                    <div className="col-span-6 sm:col-span-3">
+                      <label htmlFor="email" className="label">Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        value={editedClient.email || ''}
+                        onChange={handleInputChange}
+                        className="input"
+                      />
+                    </div>
 
-                  <div className="col-span-6 sm:col-span-3">
-                    <label htmlFor="phone" className="label">Phone</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      id="phone"
-                      value={editedClient.phone || ''}
-                      onChange={handleInputChange}
-                      className="input"
-                    />
-                  </div>
+                    <div className="col-span-6 sm:col-span-3">
+                      <label htmlFor="phone" className="label">Phone</label>
+                      <input
+                        type="text"
+                        name="phone"
+                        id="phone"
+                        value={editedClient.phone || ''}
+                        onChange={handleInputChange}
+                        className="input"
+                      />
+                    </div>
 
-                  <div className="col-span-6">
-                    <label htmlFor="address" className="label">Address</label>
-                    <textarea
-                      name="address"
-                      id="address"
-                      rows={3}
-                      value={editedClient.address || ''}
-                      onChange={handleInputChange}
-                      className="input"
-                    />
+                    <div className="col-span-6">
+                      <label htmlFor="address" className="label">Address</label>
+                      <textarea
+                        name="address"
+                        id="address"
+                        rows={3}
+                        value={editedClient.address || ''}
+                        onChange={handleInputChange}
+                        className="input"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="mt-5 flex justify-between">
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                  >
-                    Delete Client
-                  </button>
-                  <div className="space-x-3">
+                  <div className="mt-5 flex justify-between">
                     <button
                       type="button"
-                      onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onClick={handleDelete}
+                      className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                     >
-                      Cancel
+                      Delete Client
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      className="btn"
-                    >
-                      Save
-                    </button>
+                    <div className="space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(false)}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn"
+                      >
+                        Save
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           </div>

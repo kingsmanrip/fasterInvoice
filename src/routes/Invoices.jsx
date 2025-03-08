@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
@@ -7,8 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import { getData, postData, putData, deleteData } from '../utils/api';
 
 function Invoices() {
-  const location = useLocation();
-  const initialProjectId = location.state?.projectId || '';
+  const initialProjectId = '';
   
   const [invoices, setInvoices] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -257,9 +255,12 @@ function Invoices() {
               <div key={invoice.id} className="bg-white shadow rounded-lg overflow-hidden">
                 <div className="p-4">
                   <div className="flex justify-between items-center mb-2">
-                    <Link to={`/invoices/${invoice.id}`} className="text-base font-medium text-blue-600 hover:text-blue-800">
+                    <span 
+                      onClick={() => window.location.href = `/invoices/${invoice.id}`} 
+                      className="text-base font-medium text-blue-600 hover:text-blue-800 cursor-pointer"
+                    >
                       {invoice.invoice_number || `Invoice #${invoice.id}`}
-                    </Link>
+                    </span>
                     <StatusBadge status={invoice.status} />
                   </div>
                   

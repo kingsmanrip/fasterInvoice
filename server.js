@@ -32,9 +32,7 @@ const JWT_SECRET = 'mauricio-paint-invoice-secret-key-2025';
 
 // Valid users for authentication
 const VALID_USERS = [
-  { username: 'patricia', password: 'Patricia*2025*' },
-  { username: 'mauricio', password: 'Mauricio*2025*' },
-  { username: 'javier', password: 'Javier*2025*' }
+  { username: 'mauricio', password: 'Mauricio*2025*' }
 ];
 
 // Add security headers middleware
@@ -178,6 +176,24 @@ app.delete('/api/projects/:id', authenticateToken, (req, res) => {
   }
 });
 
+app.get('/api/projects/:id/invoices', authenticateToken, (req, res) => {
+  try {
+    const invoices = InvoiceModel.getByProjectId(req.params.id);
+    res.json(invoices);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/clients/:id/invoices', authenticateToken, (req, res) => {
+  try {
+    const invoices = InvoiceModel.getByClientId(req.params.id);
+    res.json(invoices);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Invoices
 app.get('/api/invoices', authenticateToken, (req, res) => {
   try {
@@ -254,6 +270,12 @@ app.post('/api/login', (req, res) => {
 
 // Serve the React app for any other routes
 app.get('*', (req, res) => {
+  // Exclude API routes from this catch-all handler
+  if (req.url.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // For all other routes, serve the React app
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

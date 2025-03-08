@@ -74,7 +74,7 @@ The application implements a secure authentication system with the following fea
 - **Login Page**: A user-friendly login interface with a paint-related logo
 - **Protected Routes**: All application routes are protected and require authentication
 - **JWT Authentication**: Secure token-based authentication using JSON Web Tokens
-- **Authorized Users**: Access is restricted to specific users (Patricia, Mauricio, and Javier)
+- **Authorized User**: Access is restricted to a single user (Mauricio)
 - **Logout Functionality**: Users can securely log out from the application
 
 ### Deployment Process
