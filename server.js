@@ -1,11 +1,40 @@
 const express = require('express');
 const path = require('path');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
 const ClientModel = require('./src/db/clientModel');
 const ProjectModel = require('./src/db/projectModel');
 const InvoiceModel = require('./src/db/invoiceModel');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 7654;
+const HTTP_PORT = 7655; // Non-privileged port for HTTP redirection
+
+// SSL Certificate options
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/mauricioinvoice.site/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/mauricioinvoice.site/fullchain.pem'),
+  minVersion: 'TLSv1.2', // Only allow TLS 1.2 and above
+  ciphers: [
+    'ECDHE-ECDSA-AES128-GCM-SHA256',
+    'ECDHE-RSA-AES128-GCM-SHA256',
+    'ECDHE-ECDSA-AES256-GCM-SHA384',
+    'ECDHE-RSA-AES256-GCM-SHA384',
+    'ECDHE-ECDSA-CHACHA20-POLY1305',
+    'ECDHE-RSA-CHACHA20-POLY1305',
+  ].join(':')
+};
+
+// Add security headers middleware
+app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // Middleware
 app.use(express.json());
@@ -175,8 +204,27 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Start the server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Access the app at http://YOUR_SERVER_IP:${PORT}`);
-});
+// For direct access, create HTTPS server
+if (process.env.NODE_ENV === 'production') {
+  // Create HTTP server for redirecting to HTTPS
+  const httpApp = express();
+  httpApp.use((req, res) => {
+    res.redirect(`https://${req.headers.host.split(':')[0]}:${PORT}${req.url}`);
+  });
+
+  // Start HTTP server (for redirects)
+  http.createServer(httpApp).listen(HTTP_PORT, '0.0.0.0', () => {
+    console.log(`HTTP Server running on port ${HTTP_PORT} (redirecting to HTTPS)`);
+  });
+
+  // Create HTTPS server for direct access
+  https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
+    console.log(`HTTPS Server running on port ${PORT}`);
+    console.log(`Access the app at https://mauricioinvoice.site`);
+  });
+} else {
+  // For development or when behind Nginx
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`HTTP Server running on port ${PORT}`);
+  });
+}

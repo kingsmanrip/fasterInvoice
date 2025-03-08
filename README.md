@@ -50,6 +50,65 @@ This will start both the frontend (Vite) and backend (Express) servers concurren
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
 
+### Production Deployment
+
+The application is deployed on a Hostinger Ubuntu VPS and configured to run as a systemd service with Nginx as a reverse proxy.
+
+### Accessing the Application
+
+The application is accessible at:
+
+```
+https://mauricioinvoice.site
+```
+
+The application uses a trusted SSL certificate from Let's Encrypt, ensuring secure access without browser warnings. The certificate is configured to automatically renew before expiration (current expiration: June 6, 2025).
+
+### Deployment Process
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/kingsmanrip/fasterInvoice.git
+   ```
+
+2. Install dependencies:
+   ```bash
+   cd fasterInvoice
+   npm install
+   ```
+
+3. Build the application:
+   ```bash
+   npm run build
+   ```
+
+4. Configure the systemd service:
+   Create a file at `/etc/systemd/system/fasterinvoice.service` with the following content:
+   ```
+   [Unit]
+   Description=FasterInvoice Application
+   After=network.target
+
+   [Service]
+   Type=simple
+   User=root
+   WorkingDirectory=/path/to/fasterInvoice
+   ExecStart=/usr/bin/npm start
+   Restart=on-failure
+   Environment=PORT=7654
+   Environment=NODE_ENV=production
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+5. Enable and start the service:
+   ```bash
+   systemctl daemon-reload
+   systemctl enable fasterinvoice.service
+   systemctl start fasterinvoice.service
+   ```
+
 ## Mobile Optimization
 
 The application is designed primarily for iPhone usage with:

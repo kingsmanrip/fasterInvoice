@@ -46,6 +46,166 @@ This document tracks the progress and steps taken to set up and run the fasterIn
    - Backend: Express.js API
    - Database: SQLite (stored locally in the `data` directory)
 
+## VPS Deployment (March 8, 2025)
+
+1. **Server Setup**
+   - Deployed the application on a Hostinger Ubuntu VPS
+   - Modified the server port to 7654 to avoid conflicts with other services:
+   ```javascript
+   // server.js
+   const PORT = process.env.PORT || 7654;
+   ```
+
+2. **Build Process**
+   - Built the frontend application for production:
+   ```bash
+   npm run build
+   ```
+   - Successfully generated optimized static files in the `dist` directory
+
+3. **Systemd Service Configuration**
+   - Created a systemd service file for automatic startup and management:
+   ```bash
+   # /etc/systemd/system/fasterinvoice.service
+   [Unit]
+   Description=FasterInvoice Application
+   After=network.target
+   
+   [Service]
+   Type=simple
+   User=root
+   WorkingDirectory=/root/fasterInvoice
+   ExecStart=/usr/bin/npm start
+   Restart=on-failure
+   Environment=PORT=7654
+   Environment=NODE_ENV=production
+   
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+4. **Service Activation**
+   - Enabled and started the service:
+   ```bash
+   systemctl daemon-reload
+   systemctl enable fasterinvoice.service
+   systemctl start fasterinvoice.service
+   ```
+   - Verified the service is running correctly:
+   ```bash
+   systemctl status fasterinvoice.service
+   ```
+
+5. **Access Configuration**
+   - The application is now accessible at:
+   ```
+   https://mauricioinvoice.site
+   ```
+
+6. **HTTPS Implementation (March 8, 2025)**
+   - Initially generated a self-signed SSL certificate for the application:
+   ```bash
+   openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:4096 -keyout private.key -out certificate.crt -subj "/CN=147.93.119.222" -addext "subjectAltName=IP:147.93.119.222"
+   ```
+   - Modified the server.js file to use HTTPS:
+   ```javascript
+   const https = require('https');
+   const fs = require('fs');
+   
+   const options = {
+     key: fs.readFileSync('path/to/private.key'),
+     cert: fs.readFileSync('path/to/certificate.crt'),
+     minVersion: 'TLSv1.2'
+   };
+   
+   https.createServer(options, app).listen(PORT, () => {
+     console.log(`Server running on https://localhost:${PORT}`);
+   });
+   ```
+   - Added security headers to enhance protection:
+   ```javascript
+   app.use((req, res, next) => {
+     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+     res.setHeader('X-Content-Type-Options', 'nosniff');
+     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+     res.setHeader('X-XSS-Protection', '1; mode=block');
+     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+     next();
+   });
+   ```
+   - Set up HTTP to HTTPS redirection:
+   ```javascript
+   http.createServer((req, res) => {
+     res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+     res.end();
+   }).listen(HTTP_PORT);
+   ```
+
+7. **Domain and Let's Encrypt Setup (March 8, 2025)**
+   - Registered domain name: mauricioinvoice.site
+   - Configured DNS A record to point to server IP (147.93.119.222)
+   - Installed Certbot and Nginx:
+   ```bash
+   apt-get update
+   apt-get install -y certbot python3-certbot-nginx nginx
+   ```
+   - Obtained Let's Encrypt certificate:
+   ```bash
+   certbot certonly --standalone -d mauricioinvoice.site
+   ```
+   - Updated server.js to use the Let's Encrypt certificate:
+   ```javascript
+   const options = {
+     key: fs.readFileSync('/etc/letsencrypt/live/mauricioinvoice.site/privkey.pem'),
+     cert: fs.readFileSync('/etc/letsencrypt/live/mauricioinvoice.site/fullchain.pem'),
+     minVersion: 'TLSv1.2'
+   };
+   ```
+   - Updated systemd service file to access certificate files:
+   ```ini
+   ReadWritePaths=/etc/letsencrypt/live/mauricioinvoice.site/
+   ReadWritePaths=/etc/letsencrypt/archive/mauricioinvoice.site/
+   ```
+
+8. **Nginx Reverse Proxy Setup (March 8, 2025)**
+   - Configured Nginx as a reverse proxy to enable clean URL (without port number):
+   ```nginx
+   server {
+       server_name mauricioinvoice.site www.mauricioinvoice.site;
+       
+       location / {
+           proxy_pass http://127.0.0.1:7654;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           proxy_cache_bypass $http_upgrade;
+       }
+   
+       listen 443 ssl;
+       ssl_certificate /etc/letsencrypt/live/mauricioinvoice.site/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/mauricioinvoice.site/privkey.pem;
+   }
+   ```
+   - Set up automatic HTTP to HTTPS redirection
+   - Modified the application to work in HTTP mode when behind Nginx:
+   ```javascript
+   // For development or when behind Nginx
+   app.listen(PORT, '0.0.0.0', () => {
+     console.log(`HTTP Server running on port ${PORT}`);
+   });
+   ```
+   - Updated systemd service to run in development mode for Nginx compatibility:
+   ```ini
+   Environment=NODE_ENV=development
+   ```
+   - Successfully implemented clean URL access at https://mauricioinvoice.site
+   - Added support for both www and non-www domain versions
+   - Certificate renewal is handled automatically by Certbot's scheduled task
+
 ## Testing
 
 1. **Manual API Testing**
