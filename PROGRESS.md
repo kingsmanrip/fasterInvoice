@@ -206,6 +206,85 @@ This document tracks the progress and steps taken to set up and run the fasterIn
    - Added support for both www and non-www domain versions
    - Certificate renewal is handled automatically by Certbot's scheduled task
 
+## Recent Updates
+
+### Improved 24/7 Uptime Configuration (March 10, 2025)
+
+1. **Enhanced Systemd Service Configuration**
+   - Updated the systemd service configuration to ensure 24/7 uptime with automatic recovery:
+   ```ini
+   [Unit]
+   Description=FasterInvoice Application
+   After=network.target
+   Wants=network-online.target
+   StartLimitIntervalSec=500
+   StartLimitBurst=5
+
+   [Service]
+   Type=simple
+   User=root
+   WorkingDirectory=/root/fasterInvoice
+   ExecStart=/usr/bin/npm start
+   Restart=always
+   RestartSec=5s
+   Environment=PORT=7654
+   Environment=NODE_ENV=production
+   ReadWritePaths=/etc/letsencrypt/live/mauricioinvoice.site/
+   ReadWritePaths=/etc/letsencrypt/archive/mauricioinvoice.site/
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   - Key improvements include:
+     - `Restart=always`: Ensures the service restarts automatically in all cases, not just on failure
+     - `RestartSec=5s`: Sets a 5-second delay between restart attempts to prevent rapid restart loops
+     - `StartLimitIntervalSec=500` and `StartLimitBurst=5`: Allows up to 5 restart attempts within a 500-second interval
+     - `Wants=network-online.target`: Ensures the service starts only after the network is fully online
+     - `NODE_ENV=production`: Improves performance and stability for the Node.js application
+
+2. **Updated Nginx Configuration**
+   - Modified the Nginx configuration to properly handle HTTPS communication with the backend:
+   ```nginx
+   server {
+       server_name mauricioinvoice.site www.mauricioinvoice.site;
+       
+       location / {
+           proxy_pass https://127.0.0.1:7654;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           proxy_cache_bypass $http_upgrade;
+           proxy_ssl_verify off;
+       }
+   
+       listen 443 ssl;
+       ssl_certificate /etc/letsencrypt/live/mauricioinvoice.site/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/mauricioinvoice.site/privkey.pem;
+   }
+   ```
+   - Key changes:
+     - Updated `proxy_pass` to use HTTPS instead of HTTP
+     - Added `proxy_ssl_verify off` to allow Nginx to connect to the application's self-signed certificate
+
+3. **Application Server Configuration**
+   - The application now runs with both HTTP and HTTPS servers:
+     - HTTP server on port 7655 (redirects to HTTPS)
+     - HTTPS server on port 7654 (main application server)
+   - This dual-server approach ensures secure communication while maintaining compatibility with the Nginx reverse proxy
+
+4. **Monitoring and Recovery**
+   - The improved configuration ensures:
+     - Automatic recovery from crashes or failures
+     - Automatic startup after server reboots
+     - Proper handling of network dependencies
+     - Optimized performance in production environment
+
+These improvements ensure that the fasterInvoice application remains accessible 24/7 with minimal downtime, even in the event of application crashes or server restarts.
+
 ## Testing
 
 1. **Manual API Testing**

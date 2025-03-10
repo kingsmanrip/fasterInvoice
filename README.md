@@ -13,6 +13,7 @@ A lightweight invoice management application built with React, Vite, Tailwind CS
 - Mobile-optimized interface with bottom tab navigation
 - Responsive design with touch-friendly controls
 - Financial summary and statistics dashboard
+- 24/7 uptime with automatic recovery from failures
 
 ## Tech Stack
 
@@ -22,6 +23,7 @@ A lightweight invoice management application built with React, Vite, Tailwind CS
 - **Authentication**: JSON Web Tokens (JWT)
 - **PDF Generation**: jsPDF
 - **Bundler**: Vite
+- **Server**: Nginx, systemd, Let's Encrypt SSL
 
 ## Getting Started
 
@@ -55,7 +57,7 @@ This will start both the frontend (Vite) and backend (Express) servers concurren
 
 ### Production Deployment
 
-The application is deployed on a Hostinger Ubuntu VPS and configured to run as a systemd service with Nginx as a reverse proxy.
+The application is deployed on a Hostinger Ubuntu VPS and configured to run as a systemd service with Nginx as a reverse proxy. The service is configured for 24/7 uptime with automatic restart capabilities.
 
 ### Accessing the Application
 
@@ -101,15 +103,21 @@ The application implements a secure authentication system with the following fea
    [Unit]
    Description=FasterInvoice Application
    After=network.target
+   Wants=network-online.target
+   StartLimitIntervalSec=500
+   StartLimitBurst=5
 
    [Service]
    Type=simple
    User=root
    WorkingDirectory=/path/to/fasterInvoice
    ExecStart=/usr/bin/npm start
-   Restart=on-failure
+   Restart=always
+   RestartSec=5s
    Environment=PORT=7654
    Environment=NODE_ENV=production
+   ReadWritePaths=/etc/letsencrypt/live/mauricioinvoice.site/
+   ReadWritePaths=/etc/letsencrypt/archive/mauricioinvoice.site/
 
    [Install]
    WantedBy=multi-user.target
@@ -142,6 +150,7 @@ The application has been tested and demonstrates excellent performance:
 - Fast frontend loading (under 20ms)
 - Proper data relationships and integrity
 - Well-structured database with appropriate foreign key constraints
+- Reliable 24/7 operation with automatic recovery from failures
 
 ## Documentation
 
