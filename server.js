@@ -238,8 +238,7 @@ app.put('/api/invoices/:id/status', authenticateToken, (req, res) => {
 
 app.put('/api/invoices/:id', authenticateToken, (req, res) => {
   try {
-    const { invoice, items } = req.body;
-    const updatedInvoice = InvoiceModel.update(req.params.id, invoice, items);
+    const updatedInvoice = InvoiceModel.update(req.params.id, req.body, req.body.items);
     res.json(updatedInvoice);
   } catch (error) {
     res.status(500).json({ error: error.message });

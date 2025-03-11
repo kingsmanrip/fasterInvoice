@@ -125,7 +125,9 @@ function InvoiceDetail() {
       // Prepare data for API
       const invoiceData = {
         ...editedInvoice,
-        items: editedItems
+        items: editedItems,
+        client_id: parseInt(editedInvoice.client_id),
+        project_id: parseInt(editedInvoice.project_id)
       };
       
       // Send update to server
