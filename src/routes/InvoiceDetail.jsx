@@ -281,7 +281,7 @@ function InvoiceDetail() {
         />
         
         <div className="flex space-x-4">
-          <h2 className="text-xl font-bold text-red-600">NEW EDITING FEATURE AVAILABLE!</h2>
+          {/* Red text indicator removed */}
         </div>
       </div>
 
