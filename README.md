@@ -9,6 +9,7 @@ A lightweight invoice management application built with React, Vite, Tailwind CS
 - Client management
 - Project tracking
 - Invoice generation with PDF download capabilities
+- **Invoice editing** with dynamic calculations for tax rates, subtotals, and totals
 - Status tracking for projects and invoices (draft, pending, paid, overdue)
 - Mobile-optimized interface with bottom tab navigation
 - Responsive design with touch-friendly controls

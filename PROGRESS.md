@@ -582,6 +582,22 @@ This journey represents the core workflow that most users will follow when using
    - Updated client authentication to use a single user account (Mauricio) as requested
    - Implemented direct navigation approach for all card components to ensure consistent behavior
 
+5. **Invoice Editing Feature Implementation (March 11, 2025)**
+   - Added comprehensive invoice editing functionality:
+     - Created new `EditInvoiceForm` component for editing invoice details
+     - Implemented `InvoiceDetailWrapper` to manage conditional rendering between viewing and editing states
+     - Enhanced the `InvoiceDetail` component with editing capabilities
+     - Added functionality to edit client, project, dates, tax rates, and line items
+     - Implemented dynamic calculation of subtotals, tax amounts, and totals
+     - Added buttons for editing and downloading PDFs directly from the invoice detail view
+   - Updated database schema to support new invoice fields:
+     - Added tax_rate, tax_amount, subtotal, po_number, and terms fields
+     - Implemented proper update methods in the invoiceModel
+   - Added server-side API endpoint for updating invoices
+   - Implemented cache-busting headers to prevent browsers from caching old versions during development
+   - Removed invoice status from PDF generation as requested
+   - Tested and verified all editing functionality works correctly
+
 ## Next Steps
 
 Potential improvements for the application:
