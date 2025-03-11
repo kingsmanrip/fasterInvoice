@@ -80,6 +80,15 @@ The application implements a secure authentication system with the following fea
 - **Authorized User**: Access is restricted to a single user (Mauricio)
 - **Logout Functionality**: Users can securely log out from the application
 
+### Server Coexistence
+
+This application is designed to coexist with the Painter Timesheet application (currentTimeControl) on the same server:
+
+- **fasterInvoice**: Runs on port 7654 and is accessible at https://mauricioinvoice.site
+- **currentTimeControl**: Runs on port 3002 and is accessible at https://patriciadmin.site
+
+Both applications use separate Nginx configurations and can run simultaneously without conflicts. Changes to one application should not affect the other as they use different ports, domains, and configuration files.
+
 ### Deployment Process
 
 1. Clone the repository:
@@ -130,6 +139,15 @@ The application implements a secure authentication system with the following fea
    systemctl enable fasterinvoice.service
    systemctl start fasterinvoice.service
    ```
+
+## Recent Updates
+
+### Invoice Editing Feature (March 2025)
+- Added ability to edit existing invoices
+- Implemented dynamic tax calculations
+- Added fields for tax rate, tax amount, subtotal, P.O. number, and terms
+- Created new components for editing invoice details
+- Enhanced the database schema to support new fields
 
 ## Mobile Optimization
 
