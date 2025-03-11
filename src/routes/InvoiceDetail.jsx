@@ -274,9 +274,16 @@ function InvoiceDetail() {
 
   return (
     <div>
-      <PageHeader 
-        title={`Invoice: ${invoice.invoice_number}`} 
-      />
+      <div className="flex justify-between items-center">
+        <PageHeader
+          title={`Invoice #${invoice.id}`}
+          subtitle={`For ${invoice.client_name} - ${invoice.project_name}`}
+        />
+        
+        <div className="flex space-x-4">
+          <h2 className="text-xl font-bold text-red-600">NEW EDITING FEATURE AVAILABLE!</h2>
+        </div>
+      </div>
 
       <div className="flex justify-between items-center mb-6">
         <div className="flex space-x-2">
