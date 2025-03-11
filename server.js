@@ -55,6 +55,8 @@ app.use((req, res, next) => {
 
 // Middleware
 app.use(express.json());
+
+// Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Middleware to verify JWT token for protected routes
@@ -285,15 +287,12 @@ app.post('/api/login', (req, res) => {
   res.json({ token });
 });
 
-// Serve the React app for any other routes
+// For any other routes, serve the index.html file
 app.get('*', (req, res) => {
-  // Exclude API routes from this catch-all handler
-  if (req.url.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API endpoint not found' });
+  // Only serve index.html for non-API routes
+  if (!req.path.startsWith('/api/')) {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   }
-  
-  // For all other routes, serve the React app
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // For direct access, create HTTPS server
