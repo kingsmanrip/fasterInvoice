@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 40" fill="none">
+  <!-- Icon from favicon -->
+  <g transform="translate(0, 2) scale(1.5)">
+    <path d="M21 8l-11 6-11-6" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M21 12l-11 6-11-6" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M3 8l9-5 9 5" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  
+  <!-- Text "Mauricio Paint & DW" -->
+  <text x="40" y="25" font-family="Arial, sans-serif" font-weight="600" font-size="16" fill="#1F2937">Mauricio Paint & DW</text>
+</svg>

@@ -142,6 +142,12 @@ Both applications use separate Nginx configurations and can run simultaneously w
 
 ## Recent Updates
 
+### Mobile UI Improvements (March 2025)
+- Added mobile-friendly tax rate spinner selector for both invoice creation and editing
+- Implemented proper tax calculations based on selected tax rate
+- Replaced text header with a custom logo for better branding
+- Enhanced mobile user experience with touch-friendly controls
+
 ### Invoice Editing Feature (March 2025)
 - Added ability to edit existing invoices
 - Implemented dynamic tax calculations

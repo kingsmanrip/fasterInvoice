@@ -26,7 +26,9 @@ function Layout() {
       {/* Header with user info and logout */}
       <header className="bg-white shadow">
         <div className="flex justify-between items-center px-4 py-2">
-          <h1 className="text-lg font-semibold text-gray-800">Mauricio Paint & DW</h1>
+          <div className="flex items-center">
+            <img src="/logo.svg" alt="Mauricio Paint & DW" className="h-8" />
+          </div>
           <div className="flex items-center">
             <span className="text-sm text-gray-600 mr-3">
               {username && `Welcome, ${username.charAt(0).toUpperCase() + username.slice(1)}`}
@@ -42,7 +44,7 @@ function Layout() {
       </header>
       
       {/* Main content area with padding for bottom tabs */}
-      <main className="pb-20 pt-4">
+      <main className="pb-20 pt-4 px-4 mx-auto max-w-lg">
         <Outlet />
       </main>
       

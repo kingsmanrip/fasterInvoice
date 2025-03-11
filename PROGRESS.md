@@ -285,6 +285,25 @@ This document tracks the progress and steps taken to set up and run the fasterIn
 
 These improvements ensure that the fasterInvoice application remains accessible 24/7 with minimal downtime, even in the event of application crashes or server restarts.
 
+## Mobile UI Improvements (March 11, 2025)
+
+1. **Tax Rate Spinner Implementation**
+   - Enhanced the tax rate input field in the EditInvoiceForm component:
+     - Replaced the number input with a mobile-friendly spinner selector
+     - Added options from 0% to 20% in 0.5% increments
+     - Improved the handling of tax rate values to ensure proper calculations
+   - Added the same tax rate spinner to the invoice creation form:
+     - Updated the state management to include tax_rate field
+     - Implemented tax calculations during invoice creation
+     - Ensured consistent user experience between creation and editing forms
+
+2. **Logo Implementation**
+   - Created a logo.svg file based on the existing favicon
+   - Replaced the text header in the Layout component with the logo image
+   - Enhanced the visual branding of the application
+
+These improvements provide a better mobile user experience, particularly for setting tax rates, and enhance the visual identity of the application with a proper logo instead of plain text.
+
 ## Testing
 
 1. **Manual API Testing**

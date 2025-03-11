@@ -19,6 +19,7 @@ function Invoices() {
     total_amount: '',
     status: 'pending',
     notes: '',
+    tax_rate: 0,
   });
 
   useEffect(() => {
@@ -45,7 +46,7 @@ function Invoices() {
     const { name, value } = e.target;
     setNewInvoice((prev) => ({ 
       ...prev, 
-      [name]: name === 'project_id' || name === 'total_amount' 
+      [name]: name === 'project_id' || name === 'total_amount' || name === 'tax_rate'
         ? value === '' ? '' : Number(value) 
         : value 
     }));
@@ -62,11 +63,6 @@ function Invoices() {
         return;
       }
       
-      const invoiceData = {
-        ...newInvoice,
-        client_id: selectedProject.client_id,
-      };
-      
       // Create a default item for the invoice
       const items = [
         {
@@ -76,6 +72,20 @@ function Invoices() {
           amount: newInvoice.total_amount
         }
       ];
+      
+      // Calculate tax amount and subtotal
+      const subtotal = newInvoice.total_amount;
+      const taxRate = parseFloat(newInvoice.tax_rate) || 0;
+      const taxAmount = subtotal * (taxRate / 100);
+      
+      // Prepare invoice data with tax information
+      const invoiceData = {
+        ...newInvoice,
+        client_id: selectedProject.client_id,
+        subtotal: subtotal,
+        tax_amount: taxAmount,
+        total_amount: parseFloat(subtotal) + taxAmount
+      };
       
       // postData already returns the JSON data
       const invoice = await postData('/api/invoices', { 
@@ -91,6 +101,7 @@ function Invoices() {
         total_amount: '',
         status: 'pending',
         notes: '',
+        tax_rate: 0,
       });
       setShowForm(false);
     } catch (error) {
@@ -110,12 +121,18 @@ function Invoices() {
     }
   };
 
+  const navigateToInvoice = (invoiceId) => {
+    window.location.href = `/invoices/${invoiceId}`;
+  };
+
   if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
+    return <div className="flex justify-center items-center py-12">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+    </div>;
   }
 
   return (
-    <div className="px-4 pb-16 max-w-lg mx-auto">
+    <div className="px-4 pb-20 max-w-lg mx-auto">
       <PageHeader
         title="Invoices"
         actionLabel={showForm ? null : "Add Invoice"}
@@ -139,7 +156,7 @@ function Invoices() {
                 value={newInvoice.project_id}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
               >
                 <option value="">Select a project</option>
                 {projects.map((project) => (
@@ -160,7 +177,7 @@ function Invoices() {
                   value={newInvoice.issue_date}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                 />
               </div>
 
@@ -173,7 +190,7 @@ function Invoices() {
                   value={newInvoice.due_date}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                 />
               </div>
             </div>
@@ -189,8 +206,34 @@ function Invoices() {
                 value={newInvoice.total_amount}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
               />
+            </div>
+
+            <div>
+              <label htmlFor="tax_rate" className="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
+              <select
+                name="tax_rate"
+                id="tax_rate"
+                value={newInvoice.tax_rate}
+                onChange={(e) => {
+                  // Create a new event with the parsed float value
+                  const newEvent = {
+                    ...e,
+                    target: {
+                      ...e.target,
+                      name: e.target.name,
+                      value: parseFloat(e.target.value)
+                    }
+                  };
+                  handleInputChange(newEvent);
+                }}
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
+              >
+                {[...Array(41)].map((_, i) => (
+                  <option key={i} value={i * 0.5}>{i * 0.5}%</option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -200,7 +243,7 @@ function Invoices() {
                 id="status"
                 value={newInvoice.status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
               >
                 <option value="draft">Draft</option>
                 <option value="pending">Pending</option>
@@ -217,21 +260,21 @@ function Invoices() {
                 rows={3}
                 value={newInvoice.notes}
                 onChange={handleInputChange}
-                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
               />
             </div>
             
-            <div className="flex justify-end space-x-3 pt-2">
+            <div className="flex flex-col space-y-3 pt-2 sm:flex-row sm:space-y-0 sm:space-x-3 sm:justify-end">
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-4 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-4 py-3 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Save
               </button>
@@ -250,52 +293,64 @@ function Invoices() {
         />
       ) : (
         !showForm && (
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-4">
             {invoices.map((invoice) => (
-              <div key={invoice.id} className="bg-white shadow rounded-lg overflow-hidden">
+              <div 
+                key={invoice.id} 
+                className="bg-white shadow rounded-lg overflow-hidden border border-gray-100"
+                onClick={() => navigateToInvoice(invoice.id)}
+              >
                 <div className="p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span 
-                      onClick={() => window.location.href = `/invoices/${invoice.id}`} 
-                      className="text-base font-medium text-blue-600 hover:text-blue-800 cursor-pointer"
-                    >
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-lg font-medium text-blue-600">
                       {invoice.invoice_number || `Invoice #${invoice.id}`}
                     </span>
                     <StatusBadge status={invoice.status} />
                   </div>
                   
-                  <div className="text-sm text-gray-500 mb-2 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                    </svg>
-                    {format(new Date(invoice.issue_date), 'MMM d, yyyy')}
-                    <span className="mx-1">•</span>
-                    Due: {format(new Date(invoice.due_date), 'MMM d, yyyy')}
+                  <div className="text-sm text-gray-500 mb-3">
+                    <div className="flex items-center mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      </svg>
+                      <span>Issued: {format(new Date(invoice.issue_date), 'MMM d, yyyy')}</span>
+                    </div>
+                    <div className="flex items-center mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                      </svg>
+                      <span>Due: {format(new Date(invoice.due_date), 'MMM d, yyyy')}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                      </svg>
+                      <span>Project: {invoice.project_name}</span>
+                    </div>
                   </div>
                   
-                  <div className="text-sm text-gray-500 mb-2 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                    </svg>
-                    Project: {invoice.project_name}
-                  </div>
-                  
-                  <div className="flex justify-between items-center mt-3">
-                    <span className="text-lg font-semibold">${invoice.total_amount.toFixed(2)}</span>
+                  <div className="flex flex-col space-y-3">
+                    <div className="text-xl font-bold">${invoice.total_amount.toFixed(2)}</div>
                     
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
                       {invoice.status !== 'paid' && (
                         <button
-                          onClick={() => handleStatusChange(invoice.id, 'paid')}
-                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(invoice.id, 'paid');
+                          }}
+                          className="flex-1 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
                           Mark Paid
                         </button>
                       )}
                       {invoice.status === 'pending' && new Date(invoice.due_date) < new Date() && (
                         <button
-                          onClick={() => handleStatusChange(invoice.id, 'overdue')}
-                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(invoice.id, 'overdue');
+                          }}
+                          className="flex-1 py-3 border border-transparent text-base font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                         >
                           Mark Overdue
                         </button>

@@ -7,25 +7,29 @@ const jwt = require('jsonwebtoken');
 const ClientModel = require('./src/db/clientModel');
 const ProjectModel = require('./src/db/projectModel');
 const InvoiceModel = require('./src/db/invoiceModel');
+const net = require('net');
 
 const app = express();
-const PORT = process.env.PORT || 7654;
+const PORT = process.env.NODE_ENV === 'production' ? 7654 : 54321;
 const HTTP_PORT = 7655; // Non-privileged port for HTTP redirection
 
 // SSL Certificate options
-const options = {
-  key: fs.readFileSync('/etc/letsencrypt/live/mauricioinvoice.site/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/mauricioinvoice.site/fullchain.pem'),
-  minVersion: 'TLSv1.2', // Only allow TLS 1.2 and above
-  ciphers: [
-    'ECDHE-ECDSA-AES128-GCM-SHA256',
-    'ECDHE-RSA-AES128-GCM-SHA256',
-    'ECDHE-ECDSA-AES256-GCM-SHA384',
-    'ECDHE-RSA-AES256-GCM-SHA384',
-    'ECDHE-ECDSA-CHACHA20-POLY1305',
-    'ECDHE-RSA-CHACHA20-POLY1305',
-  ].join(':')
-};
+let options = {};
+if (process.env.NODE_ENV === 'production') {
+  options = {
+    key: fs.readFileSync('/etc/letsencrypt/live/mauricioinvoice.site/privkey.pem'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/mauricioinvoice.site/fullchain.pem'),
+    minVersion: 'TLSv1.2', // Only allow TLS 1.2 and above
+    ciphers: [
+      'ECDHE-ECDSA-AES128-GCM-SHA256',
+      'ECDHE-RSA-AES128-GCM-SHA256',
+      'ECDHE-ECDSA-AES256-GCM-SHA384',
+      'ECDHE-RSA-AES256-GCM-SHA384',
+      'ECDHE-ECDSA-CHACHA20-POLY1305',
+      'ECDHE-RSA-CHACHA20-POLY1305',
+    ].join(':')
+  };
+}
 
 // JWT Secret for authentication
 const JWT_SECRET = 'mauricio-paint-invoice-secret-key-2025';
@@ -316,7 +320,8 @@ if (process.env.NODE_ENV === 'production') {
   });
 } else {
   // For development or when behind Nginx
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`HTTP Server running on port ${PORT}`);
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    const port = server.address().port;
+    console.log(`HTTP Server running on port ${port}`);
   });
 }
