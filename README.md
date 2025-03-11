@@ -142,18 +142,16 @@ Both applications use separate Nginx configurations and can run simultaneously w
 
 ## Recent Updates
 
-### Mobile UI Improvements (March 2025)
-- Added mobile-friendly tax rate spinner selector for both invoice creation and editing
-- Implemented proper tax calculations based on selected tax rate
-- Replaced text header with a custom logo for better branding
-- Enhanced mobile user experience with touch-friendly controls
+### March 11, 2025
+- **UI Improvements**: Removed duplicate navigation buttons from the dashboard for a cleaner, more consistent interface
+- **Deployment Updates**: Fixed 502 Bad Gateway error by updating Nginx configuration to correctly proxy to port 54321
+- **Static File Serving**: Updated server configuration to properly serve the Vite-built frontend from the 'dist' directory
 
-### Invoice Editing Feature (March 2025)
-- Added ability to edit existing invoices
-- Implemented dynamic tax calculations
-- Added fields for tax rate, tax amount, subtotal, P.O. number, and terms
-- Created new components for editing invoice details
-- Enhanced the database schema to support new fields
+### March 10, 2025
+- **Mobile UI Improvements**: Enhanced the user interface for better usability on iPhone devices
+- **Invoice Editing**: Added the ability to edit existing invoices with dynamic recalculation of totals
+- **Tax Rate Selection**: Implemented a mobile-friendly spinner selector for tax rates (0% to 20% in 0.5% increments)
+- **Deployment**: Application is now accessible at https://mauricioinvoice.site with 24/7 uptime
 
 ## Mobile Optimization
 

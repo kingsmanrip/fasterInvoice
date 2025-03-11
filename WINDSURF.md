@@ -90,6 +90,9 @@ This document serves as a set of instructions and guidelines for AI assistants w
    # Pull latest changes
    git pull
    
+   # If there are local changes that might conflict
+   git stash
+   
    # Install any new dependencies
    npm install
    
@@ -101,10 +104,15 @@ This document serves as a set of instructions and guidelines for AI assistants w
    ```
 
 3. **Port Configuration**
-   - The application is configured to run on port 7654
+   - The application is configured to run on port 54321 in development mode and port 7654 in production mode
+   - Configuration in server.js:
+     ```javascript
+     const PORT = process.env.NODE_ENV === 'production' ? 7654 : 54321;
+     ```
    - To change the port:
-     - Edit the systemd service file: `/etc/systemd/system/fasterinvoice.service`
-     - Update the `Environment=PORT=7654` line
+     - Edit the server.js file to update the PORT constant
+     - If using systemd, edit the service file: `/etc/systemd/system/fasterinvoice.service`
+     - Update the `Environment=PORT=7654` line if needed
      - Run `systemctl daemon-reload` to reload the configuration
      - Restart the service: `systemctl restart fasterinvoice.service`
 
@@ -130,7 +138,10 @@ This document serves as a set of instructions and guidelines for AI assistants w
 
 2. **Nginx Configuration**
    - Nginx is configured as a reverse proxy to provide a clean URL without port number
-   - Configuration file: `/etc/nginx/sites-available/fasterinvoice`
+   - Configuration files:
+     - `/etc/nginx/sites-available/fasterinvoice`
+     - `/etc/nginx/sites-available/mauricioinvoice.site`
+   - Both configuration files should be enabled via symbolic links in `/etc/nginx/sites-enabled/`
    - The application is accessible at `https://mauricioinvoice.site` (no port number needed)
    - Both www and non-www domain versions are supported
    - To modify the Nginx configuration:
@@ -146,17 +157,28 @@ This document serves as a set of instructions and guidelines for AI assistants w
    ```
    - The current configuration:
      - Redirects HTTP to HTTPS
-     - Forwards HTTPS traffic to the application on port 7654
+     - Forwards HTTPS traffic to the application on port 54321
      - Handles SSL termination with Let's Encrypt certificates
 
-3. **Application Mode**
-   - The application runs in development mode (`NODE_ENV=development`) when behind Nginx
-   - This allows Nginx to handle the SSL termination while the app runs in HTTP mode
-   - If you need to change this behavior:
-     - Edit the systemd service file: `/etc/systemd/system/fasterinvoice.service`
-     - Modify the `Environment=NODE_ENV=development` line
-     - Run `systemctl daemon-reload` to reload the configuration
-     - Restart the service: `systemctl restart fasterinvoice.service`
+3. **Static File Serving**
+   - The application serves static files from the `dist` directory
+   - Configuration in server.js:
+     ```javascript
+     app.use(express.static(path.join(__dirname, 'dist')));
+     ```
+   - The catch-all route serves the React app from the dist directory:
+     ```javascript
+     app.get('*', (req, res) => {
+       // Exclude API routes from this catch-all handler
+       if (req.url.startsWith('/api/')) {
+         return res.status(404).json({ error: 'API endpoint not found' });
+       }
+       
+       // For all other routes, serve the React app
+       res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+     });
+     ```
+   - After making changes to the frontend, always rebuild with `npm run build`
 
 4. **Security Headers**
    - The application implements several security headers:
@@ -164,7 +186,7 @@ This document serves as a set of instructions and guidelines for AI assistants w
    app.use((req, res, next) => {
      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
      res.setHeader('X-Content-Type-Options', 'nosniff');
-     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+     res.setHeader('X-Frame-Options', 'DENY');
      res.setHeader('X-XSS-Protection', '1; mode=block');
      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
      next();

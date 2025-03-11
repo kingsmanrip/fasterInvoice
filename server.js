@@ -59,7 +59,7 @@ app.use((req, res, next) => {
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Middleware to verify JWT token for protected routes
 const authenticateToken = (req, res, next) => {
@@ -297,7 +297,7 @@ app.get('*', (req, res) => {
   }
   
   // For all other routes, serve the React app
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // For direct access, create HTTPS server

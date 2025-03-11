@@ -206,6 +206,102 @@ This document tracks the progress and steps taken to set up and run the fasterIn
    - Added support for both www and non-www domain versions
    - Certificate renewal is handled automatically by Certbot's scheduled task
 
+## Recent Deployment Updates (March 11, 2025)
+
+1. **Port Configuration Update**
+   - Updated the application to run on port 54321 instead of 7654:
+   ```javascript
+   // server.js
+   const PORT = process.env.NODE_ENV === 'production' ? 7654 : 54321;
+   ```
+   - This change helps avoid conflicts with other applications and services on the server
+
+2. **Nginx Configuration Fix**
+   - Updated the Nginx configuration to correctly proxy requests to the application:
+   ```nginx
+   # /etc/nginx/sites-available/fasterinvoice
+   location / {
+       proxy_pass http://127.0.0.1:54321;
+       proxy_http_version 1.1;
+       proxy_set_header Upgrade $http_upgrade;
+       proxy_set_header Connection 'upgrade';
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+       proxy_cache_bypass $http_upgrade;
+   }
+   ```
+   - Fixed a 502 Bad Gateway error by ensuring the Nginx configuration points to the correct port
+   - Enabled the site configuration for mauricioinvoice.site in Nginx sites-enabled directory
+
+3. **Static File Serving Update**
+   - Modified the server.js file to serve static files from the 'dist' directory instead of 'public':
+   ```javascript
+   // server.js
+   app.use(express.static(path.join(__dirname, 'dist')));
+   ```
+   - Updated the catch-all route to serve index.html from the 'dist' directory:
+   ```javascript
+   // server.js
+   app.get('*', (req, res) => {
+     // Exclude API routes from this catch-all handler
+     if (req.url.startsWith('/api/')) {
+       return res.status(404).json({ error: 'API endpoint not found' });
+     }
+     
+     // For all other routes, serve the React app
+     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+   });
+   ```
+   - This ensures the React application built with Vite is properly served
+
+4. **Build Process**
+   - Rebuilt the frontend application for production:
+   ```bash
+   npm run build
+   ```
+   - Successfully generated optimized static files in the `dist` directory
+   - The build process created the following files:
+     ```
+     dist/index.html
+     dist/assets/index-BNJX-rnp.css
+     dist/assets/purify.es-Ci5xwkH_.js
+     dist/assets/index.es-Dg-H6vvg.js
+     dist/assets/html2canvas.esm-CBrSDip1.js
+     dist/assets/index-BPf7QQtP.js
+     ```
+
+5. **Deployment Workflow Improvements**
+   - Established a more robust deployment workflow:
+     1. Pull latest code from GitHub repository
+     2. Stash any local changes that might conflict
+     3. Install dependencies
+     4. Build the frontend
+     5. Update configuration files as needed
+     6. Restart the application
+
+6. **Application Access**
+   - The application is now accessible at:
+   ```
+   https://mauricioinvoice.site
+   ```
+   - The site uses HTTPS with a valid SSL certificate from Let's Encrypt
+
+## UI Improvements (March 11, 2025)
+
+1. **Removed Duplicate Navigation Buttons**
+   - Removed the redundant "Quick Action Buttons" section from the Dashboard component
+   - This change eliminates redundancy as these functions are already available through the bottom navigation bar
+   - Improves the mobile user experience by making the UI cleaner and more consistent
+   - Follows modern mobile app design patterns by relying on a single navigation system
+
+2. **Streamlined User Interface**
+   - The application now has a more focused UI with a single navigation system
+   - Bottom navigation bar provides access to all main sections: Home, Clients, Projects, and Invoices
+   - Each section still maintains its own "New" or "Create" buttons where appropriate
+   - The dashboard now focuses on displaying financial summaries and statistics without distractions
+
 ## Recent Updates
 
 ### Improved 24/7 Uptime Configuration (March 10, 2025)
