@@ -74,4 +74,48 @@ function initDb() {
 // Initialize the database
 initDb();
 
+// Add new fields to invoices table
+try {
+  // Check if columns already exist to avoid errors
+  const tableInfo = db.prepare("PRAGMA table_info(invoices)").all();
+  const columns = tableInfo.map(col => col.name);
+  
+  if (!columns.includes('tax_rate')) {
+    db.exec(`
+      ALTER TABLE invoices 
+      ADD COLUMN tax_rate REAL DEFAULT 0;
+    `);
+  }
+  
+  if (!columns.includes('tax_amount')) {
+    db.exec(`
+      ALTER TABLE invoices 
+      ADD COLUMN tax_amount REAL DEFAULT 0;
+    `);
+  }
+  
+  if (!columns.includes('subtotal')) {
+    db.exec(`
+      ALTER TABLE invoices 
+      ADD COLUMN subtotal REAL DEFAULT 0;
+    `);
+  }
+  
+  if (!columns.includes('po_number')) {
+    db.exec(`
+      ALTER TABLE invoices 
+      ADD COLUMN po_number TEXT;
+    `);
+  }
+  
+  if (!columns.includes('terms')) {
+    db.exec(`
+      ALTER TABLE invoices 
+      ADD COLUMN terms TEXT DEFAULT 'Net 30';
+    `);
+  }
+} catch (error) {
+  console.error('Error adding new columns to invoices table:', error);
+}
+
 module.exports = db;

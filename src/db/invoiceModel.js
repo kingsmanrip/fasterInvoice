@@ -59,18 +59,21 @@ const InvoiceModel = {
       const invoiceNumber = `INV-${year}${month}-${count}`;
       
       // Insert the invoice
-      const { client_id, project_id, issue_date, due_date, notes, total_amount, status } = invoice;
+      const { client_id, project_id, issue_date, due_date, notes, total_amount, status,
+              tax_rate, tax_amount, subtotal, po_number, terms } = invoice;
       
       const insertInvoice = db.prepare(`
         INSERT INTO invoices (
           invoice_number, client_id, project_id, issue_date, due_date, 
-          notes, total_amount, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          notes, total_amount, status, tax_rate, tax_amount, subtotal,
+          po_number, terms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const result = insertInvoice.run(
         invoiceNumber, client_id, project_id, issue_date, due_date,
-        notes, total_amount, status || 'draft'
+        notes, total_amount, status || 'draft', tax_rate || 0, tax_amount || 0, 
+        subtotal || total_amount, po_number || null, terms || 'Net 30'
       );
       
       const invoiceId = result.lastInsertRowid;
@@ -144,6 +147,54 @@ const InvoiceModel = {
       WHERE i.project_id = ?
       ORDER BY i.created_at DESC
     `).all(projectId);
+  },
+
+  // Update an invoice and its items
+  update: (id, invoice, items) => {
+    // Begin transaction
+    const transaction = db.transaction((id, invoice, items) => {
+      // Update the invoice
+      const { client_id, project_id, issue_date, due_date, notes, total_amount, status, 
+              tax_rate, tax_amount, subtotal, po_number, terms } = invoice;
+      
+      db.prepare(`
+        UPDATE invoices 
+        SET client_id = ?, project_id = ?, issue_date = ?, due_date = ?, 
+            notes = ?, total_amount = ?, status = ?, tax_rate = ?, 
+            tax_amount = ?, subtotal = ?, po_number = ?, terms = ?
+        WHERE id = ?
+      `).run(
+        client_id, project_id, issue_date, due_date, notes, total_amount, status,
+        tax_rate || 0, tax_amount || 0, subtotal || total_amount, po_number, terms || 'Net 30',
+        id
+      );
+      
+      // Delete existing items
+      db.prepare('DELETE FROM invoice_items WHERE invoice_id = ?').run(id);
+      
+      // Insert updated items
+      const insertItem = db.prepare(`
+        INSERT INTO invoice_items (
+          invoice_id, description, quantity, rate, amount
+        ) VALUES (?, ?, ?, ?, ?)
+      `);
+      
+      for (const item of items) {
+        insertItem.run(
+          id, 
+          item.description, 
+          item.quantity, 
+          item.rate, 
+          item.amount
+        );
+      }
+      
+      // Get the updated invoice with items
+      return InvoiceModel.getById(id);
+    });
+    
+    // Execute transaction
+    return transaction(id, invoice, items);
   }
 };
 

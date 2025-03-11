@@ -1,44 +1,153 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
+import EditInvoiceForm from '../components/EditInvoiceForm';
+import InvoiceDetailWrapper from '../components/InvoiceDetailWrapper';
 import { getData, putData, deleteData } from '../utils/api';
 
 function InvoiceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [invoice, setInvoice] = useState(null);
+  const [invoice, setInvoice] = useState({ items: [] });
+  const [clients, setClients] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedInvoice, setEditedInvoice] = useState({});
+  const [editedItems, setEditedItems] = useState([]);
 
   useEffect(() => {
-    const fetchInvoiceData = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getData(`/api/invoices/${id}`);
-        if (!data) {
-          console.error('Failed to fetch invoice data');
-          navigate('/invoices');
-          return;
-        }
-        setInvoice(data);
+        const [invoiceData, clientsData, projectsData] = await Promise.all([
+          getData(`/api/invoices/${id}`),
+          getData('/api/clients'),
+          getData('/api/projects')
+        ]);
+        
+        setInvoice(invoiceData);
+        setClients(clientsData);
+        setProjects(projectsData);
+        
+        // Initialize edited invoice with current invoice data
+        setEditedInvoice({
+          ...invoiceData,
+          client_id: invoiceData.client_id.toString(),
+          project_id: invoiceData.project_id.toString(),
+          tax_rate: invoiceData.tax_rate || 0,
+          tax_amount: invoiceData.tax_amount || 0,
+          subtotal: invoiceData.subtotal || invoiceData.total_amount - (invoiceData.tax_amount || 0),
+          po_number: invoiceData.po_number || '',
+          terms: invoiceData.terms || 'Net 30'
+        });
+        
+        // Initialize edited items with current items
+        setEditedItems(invoiceData.items.map(item => ({
+          ...item,
+          id: item.id || null
+        })));
+        
+        setLoading(false);
       } catch (error) {
-        console.error('Error fetching invoice:', error);
-        navigate('/invoices');
-      } finally {
+        console.error('Error fetching data:', error);
         setLoading(false);
       }
     };
 
-    fetchInvoiceData();
-  }, [id, navigate]);
+    fetchData();
+  }, [id]);
 
   const handleStatusChange = async (newStatus) => {
     try {
-      const updatedInvoice = await putData(`/api/invoices/${id}/status`, { status: newStatus });
-      setInvoice({ ...invoice, status: updatedInvoice.status });
+      const updatedInvoice = { ...invoice, status: newStatus };
+      await putData(`/api/invoices/${id}`, updatedInvoice);
+      setInvoice(updatedInvoice);
     } catch (error) {
-      console.error('Error updating invoice status:', error);
+      console.error('Error updating status:', error);
     }
+  };
+
+  const handleInvoiceChange = (e) => {
+    const { name, value } = e.target;
+    setEditedInvoice(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...editedItems];
+    newItems[index][field] = value;
+    
+    // Update amount when quantity or rate changes
+    if (field === 'quantity' || field === 'rate') {
+      newItems[index].amount = newItems[index].quantity * newItems[index].rate;
+    }
+    
+    setEditedItems(newItems);
+    updateTotals(newItems);
+  };
+
+  const updateTotals = (items = editedItems) => {
+    const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const taxRate = parseFloat(editedInvoice.tax_rate) || 0;
+    const taxAmount = subtotal * (taxRate / 100);
+    const totalAmount = subtotal + taxAmount;
+    
+    setEditedInvoice(prev => ({
+      ...prev,
+      subtotal,
+      tax_amount: taxAmount,
+      total_amount: totalAmount
+    }));
+  };
+
+  const addItem = () => {
+    const newItem = {
+      description: '',
+      quantity: 1,
+      rate: 0,
+      amount: 0
+    };
+    setEditedItems([...editedItems, newItem]);
+  };
+
+  const removeItem = (index) => {
+    const newItems = editedItems.filter((_, i) => i !== index);
+    setEditedItems(newItems);
+    updateTotals(newItems);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      // Prepare data for API
+      const invoiceData = {
+        ...editedInvoice,
+        items: editedItems
+      };
+      
+      // Send update to server
+      await putData(`/api/invoices/${id}`, invoiceData);
+      
+      // Update local state
+      setInvoice(invoiceData);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Reset to original invoice data
+    setEditedInvoice({
+      ...invoice,
+      client_id: invoice.client_id.toString(),
+      project_id: invoice.project_id.toString()
+    });
+    setEditedItems(invoice.items.map(item => ({ ...item })));
+    setIsEditing(false);
   };
 
   const handleDelete = async () => {
@@ -52,109 +161,113 @@ function InvoiceDetail() {
     }
   };
 
-  const generatePDF = () => {
+  const downloadPdf = () => {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let y = margin;
     
-    // Add logo or header (simplified)
-    doc.setFontSize(24);
-    doc.setTextColor(66, 135, 245); // blue
-    doc.text('INVOICE', pageWidth / 2, 20, { align: 'center' });
+    // Set up document
+    doc.setFontSize(20);
+    doc.text('INVOICE', margin, y);
     
-    // Invoice info section
+    // Invoice number and dates
+    y += 10;
     doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0); // black
-    doc.text(`Invoice #: ${invoice.invoice_number}`, 15, 40);
-    doc.text(`Issue Date: ${new Date(invoice.issue_date).toLocaleDateString()}`, 15, 45);
-    doc.text(`Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`, 15, 50);
-    doc.text(`Status: ${invoice.status.toUpperCase()}`, 15, 55);
+    doc.text(`Invoice Number: ${invoice.invoice_number}`, margin, y);
+    y += 6;
+    doc.text(`Issue Date: ${new Date(invoice.issue_date).toLocaleDateString()}`, margin, y);
+    y += 6;
+    doc.text(`Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`, margin, y);
     
-    // Company info (you would customize this)
-    doc.setFontSize(12);
-    doc.text('Your Company Name', pageWidth - 15, 40, { align: 'right' });
-    doc.setFontSize(10);
-    doc.text('123 Business Street', pageWidth - 15, 45, { align: 'right' });
-    doc.text('City, State ZIP', pageWidth - 15, 50, { align: 'right' });
-    doc.text('email@example.com', pageWidth - 15, 55, { align: 'right' });
-    
-    // Client info
-    doc.setFontSize(12);
-    doc.text('Bill To:', 15, 70);
-    doc.setFontSize(10);
-    doc.text(invoice.client_name, 15, 75);
-    if (invoice.client_address) {
-      const addressLines = invoice.client_address.split('\n');
-      addressLines.forEach((line, i) => {
-        doc.text(line, 15, 80 + (i * 5));
-      });
+    // Add P.O. Number if it exists
+    if (invoice.po_number) {
+      y += 6;
+      doc.text(`P.O. Number: ${invoice.po_number}`, margin, y);
     }
     
-    // Line items
+    // Add Terms if it exists
+    if (invoice.terms) {
+      y += 6;
+      doc.text(`Terms: ${invoice.terms}`, margin, y);
+    }
+    
+    // Client and project info
+    y += 10;
     doc.setFontSize(12);
-    doc.text('Item Details', 15, 110);
-    
-    // Table header
+    doc.text('Client:', margin, y);
+    y += 6;
     doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text('Description', 15, 120);
-    doc.text('Quantity', 110, 120);
-    doc.text('Rate', 140, 120);
-    doc.text('Amount', 170, 120);
-    doc.setFont(undefined, 'normal');
+    doc.text(invoice.client_name, margin, y);
+    y += 10;
+    doc.setFontSize(12);
+    doc.text('Project:', margin, y);
+    y += 6;
+    doc.setFontSize(10);
+    doc.text(invoice.project_name, margin, y);
     
-    // Table content
-    let y = 130;
-    invoice.items.forEach((item) => {
-      // Ensure description fits in the allocated space
-      const description = item.description.length > 50 
-        ? item.description.substring(0, 47) + '...' 
-        : item.description;
-        
-      doc.text(description, 15, y);
-      doc.text(item.quantity.toString(), 110, y);
-      doc.text(`$${item.rate.toFixed(2)}`, 140, y);
-      doc.text(`$${item.amount.toFixed(2)}`, 170, y);
-      y += 10;
+    // Line items
+    y += 15;
+    doc.setFontSize(12);
+    doc.text('Line Items:', margin, y);
+    y += 8;
+    
+    // Table headers
+    doc.setFontSize(10);
+    doc.text('Description', margin, y);
+    doc.text('Qty', 120, y, { align: 'right' });
+    doc.text('Rate', 150, y, { align: 'right' });
+    doc.text('Amount', 180, y, { align: 'right' });
+    y += 2;
+    doc.line(margin, y, 190, y);
+    y += 6;
+    
+    // Table rows
+    invoice.items.forEach(item => {
+      doc.text(item.description, margin, y);
+      doc.text(item.quantity.toString(), 120, y, { align: 'right' });
+      doc.text(`$${item.rate.toFixed(2)}`, 150, y, { align: 'right' });
+      doc.text(`$${item.amount.toFixed(2)}`, 180, y, { align: 'right' });
+      y += 6;
     });
     
-    // Draw line
-    y += 5;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(110, y, pageWidth - 15, y);
-    y += 10;
+    // Totals
+    y += 4;
+    doc.line(margin, y, 190, y);
+    y += 6;
     
-    // Total
+    // Show subtotal if tax is present
+    if (invoice.tax_rate > 0 || invoice.tax_amount > 0) {
+      const subtotal = invoice.subtotal || (invoice.total_amount - invoice.tax_amount);
+      doc.text('Subtotal:', 150, y);
+      doc.text(`$${subtotal.toFixed(2)}`, 180, y, { align: 'right' });
+      y += 6;
+      
+      doc.text(`Tax (${invoice.tax_rate}%):`, 150, y);
+      doc.text(`$${invoice.tax_amount.toFixed(2)}`, 180, y, { align: 'right' });
+      y += 6;
+    }
+    
     doc.setFont(undefined, 'bold');
-    doc.text('Total:', 140, y);
-    doc.text(`$${invoice.total_amount.toFixed(2)}`, 170, y);
+    doc.text('Total:', 150, y);
+    doc.text(`$${invoice.total_amount.toFixed(2)}`, 180, y, { align: 'right' });
+    doc.setFont(undefined, 'normal');
     
     // Notes
     if (invoice.notes) {
-      y += 20;
-      doc.setFont(undefined, 'bold');
-      doc.text('Notes:', 15, y);
-      doc.setFont(undefined, 'normal');
-      
-      // Handle multi-line notes
-      const notes = doc.splitTextToSize(invoice.notes, pageWidth - 30);
-      notes.forEach((line, i) => {
-        doc.text(line, 15, y + 10 + (i * 5));
-      });
+      y += 15;
+      doc.setFontSize(12);
+      doc.text('Notes:', margin, y);
+      y += 6;
+      doc.setFontSize(10);
+      doc.text(invoice.notes, margin, y);
     }
     
-    // Payment info
-    y = Math.max(y + 40, 240);
-    doc.text('Payment Instructions', 15, y);
-    doc.setFont(undefined, 'normal');
-    doc.text('Please make payment within the due date.', 15, y + 5);
-    doc.text('Thank you for your business!', 15, y + 10);
-    
-    // Save PDF
-    doc.save(`Invoice-${invoice.invoice_number}.pdf`);
+    // Save the PDF
+    doc.save(`Invoice_${invoice.invoice_number}.pdf`);
   };
 
   if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
+    return <div className="text-center mt-8">Loading...</div>;
   }
 
   return (
@@ -163,150 +276,78 @@ function InvoiceDetail() {
         title={`Invoice: ${invoice.invoice_number}`} 
       />
 
-      <div className="mt-6 space-y-8">
-        {/* Invoice Header */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6 flex justify-between">
-            <div>
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Invoice Details</h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Client: {invoice.client_name} | Project: {invoice.project_name}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <StatusBadge status={invoice.status} />
-              <select
-                value={invoice.status}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className="text-sm rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex space-x-2">
+          <Link
+            to="/invoices"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Back to Invoices
+          </Link>
+          
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
-              </select>
-            </div>
-          </div>
-          <div className="border-t border-gray-200">
-            <dl>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Invoice Number</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{invoice.invoice_number}</dd>
-              </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Issue Date</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {new Date(invoice.issue_date).toLocaleDateString()}
-                </dd>
-              </div>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Due Date</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {new Date(invoice.due_date).toLocaleDateString()}
-                </dd>
-              </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Total Amount</dt>
-                <dd className="mt-1 text-sm font-bold text-gray-900 sm:mt-0 sm:col-span-2">
-                  ${invoice.total_amount.toFixed(2)}
-                </dd>
-              </div>
-              {invoice.notes && (
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Notes</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {invoice.notes}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </div>
+                Save Changes
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Edit Invoice
+              </button>
+              <button
+                type="button"
+                onClick={downloadPdf}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Download PDF
+              </button>
+            </>
+          )}
         </div>
-
-        {/* Line Items */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Line Items</h3>
-          </div>
-          <div className="border-t border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Quantity
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rate
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {invoice.items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
-                      {item.description}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                      {item.quantity}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                      ${item.rate.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                      ${item.amount.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-                
-                {/* Total Row */}
-                <tr className="bg-gray-50">
-                  <td colSpan="3" className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                    Total:
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
-                    ${invoice.total_amount.toFixed(2)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex flex-col sm:flex-row sm:justify-between w-full z-10">
+        
+        {!isEditing && (
           <button
             type="button"
             onClick={handleDelete}
-            className="w-full sm:w-auto mb-3 sm:mb-0 px-6 py-3 text-base font-medium text-white bg-red-600 rounded-lg shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
             Delete Invoice
           </button>
-          <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-3 sm:space-y-0 sm:space-x-4">
-            <button
-              type="button"
-              onClick={() => navigate('/invoices')}
-              className="w-full sm:w-auto px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Back to Invoices
-            </button>
-            <button
-              type="button"
-              onClick={generatePDF}
-              className="w-full sm:w-auto px-6 py-3 text-base font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              Download PDF
-            </button>
-          </div>
-        </div>
-        
-        {/* Add padding at the bottom to prevent content from being hidden behind the fixed buttons */}
-        <div className="pb-32"></div>
+        )}
+      </div>
+
+      <div className="mt-6 space-y-8">
+        <InvoiceDetailWrapper
+          invoice={invoice}
+          isEditing={isEditing}
+          editedInvoice={editedInvoice}
+          editedItems={editedItems}
+          clients={clients}
+          projects={projects}
+          handleInvoiceChange={handleInvoiceChange}
+          handleItemChange={handleItemChange}
+          updateTotals={updateTotals}
+          addItem={addItem}
+          removeItem={removeItem}
+          handleStatusChange={handleStatusChange}
+        />
       </div>
     </div>
   );

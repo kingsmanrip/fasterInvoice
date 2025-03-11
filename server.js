@@ -236,6 +236,16 @@ app.put('/api/invoices/:id/status', authenticateToken, (req, res) => {
   }
 });
 
+app.put('/api/invoices/:id', authenticateToken, (req, res) => {
+  try {
+    const { invoice, items } = req.body;
+    const updatedInvoice = InvoiceModel.update(req.params.id, invoice, items);
+    res.json(updatedInvoice);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.delete('/api/invoices/:id', authenticateToken, (req, res) => {
   try {
     InvoiceModel.delete(req.params.id);
